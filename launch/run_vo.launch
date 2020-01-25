@@ -1,0 +1,9 @@
+<!-- The launch file is used to run the visual odometry -->
+
+<launch>
+
+    <rosparam command="load" file="$(find stereo_visual_slam_main)/config/kitti_param.yaml" />
+
+    <node name="run_vo" pkg="stereo_visual_slam_main" type="run_vo" output="screen"/>
+
+</launch>

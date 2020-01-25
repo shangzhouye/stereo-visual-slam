@@ -116,6 +116,8 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  "include/"
+  "/usr/include/eigen3"
 )
 
 ## Declare a C++ library
@@ -132,6 +134,25 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/stereo_visual_slam_main_node.cpp)
+
+# OpenCV
+find_package(OpenCV 3.1 REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+# Sophus
+find_package(Sophus REQUIRED)
+include_directories(${Sophus_INCLUDE_DIRS})
+
+add_library(frame src/stereo_vo/frame.cpp)
+add_dependencies(frame ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_library(structureless_vo src/stereo_vo/structureless_vo.cpp)
+add_dependencies(structureless_vo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} frame)
+
+add_executable(${PROJECT_NAME}_run_vo src/run_vo.cpp)
+set_target_properties(${PROJECT_NAME}_run_vo PROPERTIES OUTPUT_NAME run_vo PREFIX "")
+add_dependencies(${PROJECT_NAME}_run_vo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} frame structureless_vo)
+target_link_libraries(${PROJECT_NAME}_run_vo frame structureless_vo ${catkin_LIBRARIES} ${OpenCV_LIBS} ${Sophus_LIBRARIES})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -202,3 +223,12 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+# add compile settings
+add_compile_options(-Wall -Werror)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# use clang as the compiler
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+set(CMAKE_C_COMPILER "/usr/bin/clang")
