@@ -30,6 +30,7 @@ public:
     cv::Ptr<cv::FeatureDetector> detector_ = cv::ORB::create();
     cv::Ptr<cv::DescriptorExtractor> descriptor_ = cv::ORB::create();
     cv::Ptr<cv::DescriptorMatcher> matcher_ = cv::DescriptorMatcher::create("BruteForce-Hamming");
+    cv::Ptr<cv::DescriptorMatcher> matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
 
 public:
 

@@ -111,6 +111,7 @@ int StructurelessVO::feature_matching(const cv::Mat &img_1, const cv::Mat &img_2
     cv::imshow("ORB features", outimg1);
 
     vector<cv::DMatch> matches;
+    // without cross check
     matcher_->match(descriptors_1, descriptors_2, matches);
 
     // show matched images
@@ -119,8 +120,18 @@ int StructurelessVO::feature_matching(const cv::Mat &img_1, const cv::Mat &img_2
     cv::imshow("all matches", img_match);
     cout << "Number of all the matches: " << matches.size() << endl;
 
+    vector<cv::DMatch> matches_crosscheck;
+    // use cross check for matching
+    matcher_crosscheck_->match(descriptors_1, descriptors_2, matches_crosscheck);
+
+    // show matched images
+    Mat img_match_crosscheck;
+    cv::drawMatches(img_1, keypoints_1, img_2, keypoints_2, matches_crosscheck, img_match_crosscheck);
+    cv::imshow("matches after cross check", img_match_crosscheck);
+    cout << "Number of matches after cross check: " << matches_crosscheck.size() << endl;
+
     // calculate the min/max distance
-    auto min_max = minmax_element(matches.begin(), matches.end(), [](const auto &lhs, const auto &rhs) {
+    auto min_max = minmax_element(matches_crosscheck.begin(), matches_crosscheck.end(), [](const auto &lhs, const auto &rhs) {
         return lhs.distance < rhs.distance;
     });
 
@@ -131,11 +142,11 @@ int StructurelessVO::feature_matching(const cv::Mat &img_1, const cv::Mat &img_2
 
     // threshold: distance should be smaller than two times of min distance or 30
     vector<cv::DMatch> matches_threshold;
-    for (int i = 0; i < descriptors_1.rows; i++)
+    for (int i = 0; i < matches_crosscheck.size(); i++)
     {
-        if (matches[i].distance <= max(2.0 * min_element->distance, 15.0))
+        if (matches_crosscheck[i].distance <= max(2.0 * min_element->distance, 20.0))
         {
-            matches_threshold.push_back(matches[i]);
+            matches_threshold.push_back(matches_crosscheck[i]);
         }
     }
 
@@ -144,6 +155,7 @@ int StructurelessVO::feature_matching(const cv::Mat &img_1, const cv::Mat &img_2
     cv::drawMatches(img_1, keypoints_1, img_2, keypoints_2, matches_threshold, img_match_threshold);
     cv::imshow("matches after threshold", img_match_threshold);
     cout << "Number of matches after threshold: " << matches_threshold.size() << endl;
+
     cv::waitKey(0);
 
     return 0;
