@@ -27,6 +27,9 @@ public:
     Frame frame_last_;
     Frame frame_current_;
     string dataset_;
+    cv::Ptr<cv::FeatureDetector> detector_ = cv::ORB::create();
+    cv::Ptr<cv::DescriptorExtractor> descriptor_ = cv::ORB::create();
+    cv::Ptr<cv::DescriptorMatcher> matcher_ = cv::DescriptorMatcher::create("BruteForce-Hamming");
 
 public:
 
@@ -64,6 +67,14 @@ public:
     *  \return if successful
     */
     int initialization();
+
+    /*! \brief feature detection and matching
+    *
+    *  \param img_1 - the first image
+    *  \param img_2 - the second image
+    *  \return if successful
+    */
+    int feature_matching(const cv::Mat &img_1, const cv::Mat &img_2);
 };
 
 } // namespace vslam
