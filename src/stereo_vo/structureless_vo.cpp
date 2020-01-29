@@ -16,11 +16,21 @@ using namespace Eigen;
 namespace vslam
 {
 
-StructurelessVO::StructurelessVO() {}
+StructurelessVO::StructurelessVO()
+{
+    detector_ = cv::ORB::create();
+    descriptor_ = cv::ORB::create();
+    matcher_ = cv::DescriptorMatcher::create("BruteForce-Hamming");
+    cv::BFMatcher::create(cv::NORM_HAMMING, true);
+}
 
 StructurelessVO::StructurelessVO(string dataset)
 {
-    this->dataset_ = dataset;
+    dataset_ = dataset;
+    detector_ = cv::ORB::create();
+    descriptor_ = cv::ORB::create();
+    matcher_ = cv::DescriptorMatcher::create("BruteForce-Hamming");
+    cv::BFMatcher::create(cv::NORM_HAMMING, true);
 }
 
 int StructurelessVO::read_img(int id, cv::Mat &left_img, cv::Mat &right_img)

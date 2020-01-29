@@ -27,10 +27,10 @@ public:
     Frame frame_last_;
     Frame frame_current_;
     string dataset_;
-    cv::Ptr<cv::FeatureDetector> detector_ = cv::ORB::create();
-    cv::Ptr<cv::DescriptorExtractor> descriptor_ = cv::ORB::create();
-    cv::Ptr<cv::DescriptorMatcher> matcher_ = cv::DescriptorMatcher::create("BruteForce-Hamming");
-    cv::Ptr<cv::DescriptorMatcher> matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
+    cv::Ptr<cv::FeatureDetector> detector_;
+    cv::Ptr<cv::DescriptorExtractor> descriptor_;
+    cv::Ptr<cv::DescriptorMatcher> matcher_;
+    cv::Ptr<cv::DescriptorMatcher> matcher_crosscheck_;
 
 public:
 

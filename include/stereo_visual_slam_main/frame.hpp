@@ -18,14 +18,14 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
     // data memebers
-    int id_ = 0;
+    int id_;
     double time_stamp_;
     cv::Mat left_img_, right_img_;
     cv::Mat disparity_;
 
 public:
     // functions
-    Frame();
+    Frame() = default;
     Frame(int id, double timestamp, const Mat &left, const Mat &right);
 
 
