@@ -20,8 +20,7 @@ StructurelessVO::StructurelessVO()
 {
     detector_ = cv::ORB::create();
     descriptor_ = cv::ORB::create();
-    matcher_ = cv::DescriptorMatcher::create("BruteForce-Hamming");
-    cv::BFMatcher::create(cv::NORM_HAMMING, true);
+    matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
 }
 
 StructurelessVO::StructurelessVO(string dataset)
@@ -29,8 +28,7 @@ StructurelessVO::StructurelessVO(string dataset)
     dataset_ = dataset;
     detector_ = cv::ORB::create();
     descriptor_ = cv::ORB::create();
-    matcher_ = cv::DescriptorMatcher::create("BruteForce-Hamming");
-    cv::BFMatcher::create(cv::NORM_HAMMING, true);
+    matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
 }
 
 int StructurelessVO::read_img(int id, cv::Mat &left_img, cv::Mat &right_img)
@@ -85,13 +83,13 @@ int StructurelessVO::disparity_map(const Frame &frame, cv::Mat &disparity)
 
 int StructurelessVO::initialization()
 {
-    this->read_img(0, frame_last_.left_img_, frame_last_.right_img_);
-    this->read_img(1, frame_current_.left_img_, frame_current_.right_img_);
+    read_img(0, frame_last_.left_img_, frame_last_.right_img_);
+    read_img(1, frame_current_.left_img_, frame_current_.right_img_);
 
-    this->disparity_map(frame_last_, frame_last_.disparity_);
-    this->disparity_map(frame_current_, frame_current_.disparity_);
+    disparity_map(frame_last_, frame_last_.disparity_);
+    disparity_map(frame_current_, frame_current_.disparity_);
 
-    this->feature_matching(frame_last_.left_img_, frame_current_.left_img_);
+    feature_matching(frame_last_.left_img_, frame_current_.left_img_);
 
     return 0;
 }
@@ -115,29 +113,20 @@ int StructurelessVO::feature_matching(const cv::Mat &img_1, const cv::Mat &img_2
     descriptor_->compute(img_1, keypoints_1, descriptors_1);
     descriptor_->compute(img_2, keypoints_2, descriptors_2);
 
-    // show output image
-    Mat outimg1;
-    cv::drawKeypoints(img_1, keypoints_1, outimg1);
-    cv::imshow("ORB features", outimg1);
-
-    vector<cv::DMatch> matches;
-    // without cross check
-    matcher_->match(descriptors_1, descriptors_2, matches);
-
-    // show matched images
-    Mat img_match;
-    cv::drawMatches(img_1, keypoints_1, img_2, keypoints_2, matches, img_match);
-    cv::imshow("all matches", img_match);
-    cout << "Number of all the matches: " << matches.size() << endl;
+    // // show output image
+    // Mat outimg1;
+    // cv::drawKeypoints(img_1, keypoints_1, outimg1);
+    // cv::imshow("ORB features", outimg1);
 
     vector<cv::DMatch> matches_crosscheck;
     // use cross check for matching
     matcher_crosscheck_->match(descriptors_1, descriptors_2, matches_crosscheck);
 
-    // show matched images
-    Mat img_match_crosscheck;
-    cv::drawMatches(img_1, keypoints_1, img_2, keypoints_2, matches_crosscheck, img_match_crosscheck);
-    cv::imshow("matches after cross check", img_match_crosscheck);
+    // // show matched images
+    // Mat img_match_crosscheck;
+    // cv::drawMatches(img_1, keypoints_1, img_2, keypoints_2, matches_crosscheck, img_match_crosscheck);
+    // cv::imwrite("matches_after_cross_check.jpg", img_match_crosscheck);
+    // cv::imshow("matches after cross check", img_match_crosscheck);
     cout << "Number of matches after cross check: " << matches_crosscheck.size() << endl;
 
     // calculate the min/max distance
@@ -150,7 +139,7 @@ int StructurelessVO::feature_matching(const cv::Mat &img_1, const cv::Mat &img_2
     cout << "Min distance: " << min_element->distance << endl;
     cout << "Max distance: " << max_element->distance << endl;
 
-    // threshold: distance should be smaller than two times of min distance or 30
+    // threshold: distance should be smaller than two times of min distance or a give threshold
     vector<cv::DMatch> matches_threshold;
     for (int i = 0; i < matches_crosscheck.size(); i++)
     {
@@ -160,13 +149,14 @@ int StructurelessVO::feature_matching(const cv::Mat &img_1, const cv::Mat &img_2
         }
     }
 
-    // show matched images with threshold
-    Mat img_match_threshold;
-    cv::drawMatches(img_1, keypoints_1, img_2, keypoints_2, matches_threshold, img_match_threshold);
-    cv::imshow("matches after threshold", img_match_threshold);
+    // // show matched images with threshold
+    // Mat img_match_threshold;
+    // cv::drawMatches(img_1, keypoints_1, img_2, keypoints_2, matches_threshold, img_match_threshold);
+    // cv::imwrite("matches_after_threshold.jpg", img_match_threshold);
+    // cv::imshow("matches after threshold", img_match_threshold);
     cout << "Number of matches after threshold: " << matches_threshold.size() << endl;
 
-    cv::waitKey(0);
+    // cv::waitKey(0);
 
     return 0;
 }

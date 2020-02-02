@@ -29,7 +29,6 @@ public:
     string dataset_;
     cv::Ptr<cv::FeatureDetector> detector_;
     cv::Ptr<cv::DescriptorExtractor> descriptor_;
-    cv::Ptr<cv::DescriptorMatcher> matcher_;
     cv::Ptr<cv::DescriptorMatcher> matcher_crosscheck_;
 
 public:
