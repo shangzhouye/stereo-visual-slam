@@ -88,15 +88,17 @@ int StructurelessVO::initialization()
 
     disparity_map(frame_last_, frame_last_.disparity_);
 
-    feature_detection(frame_last_.left_img_, descriptors_last_);
-    feature_detection(frame_current_.left_img_, descriptors_curr_);
+    feature_detection(frame_last_.left_img_, keypoints_last_, descriptors_last_);
+    feature_detection(frame_current_.left_img_, keypoints_curr_, descriptors_curr_);
 
     feature_matching(descriptors_last_, descriptors_curr_, feature_matches_);
+
+    feature_visualize();
 
     return 0;
 }
 
-int StructurelessVO::feature_detection(const cv::Mat &img, cv::Mat &descriptors)
+int StructurelessVO::feature_detection(const cv::Mat &img, vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors)
 {
     // ensure the image is read
     if (!img.data)
@@ -106,7 +108,6 @@ int StructurelessVO::feature_detection(const cv::Mat &img, cv::Mat &descriptors)
     }
 
     // feature detection (Oriented FAST)
-    vector<cv::KeyPoint> keypoints;
     detector_->detect(img, keypoints);
 
     // BRIEF describer
@@ -116,6 +117,7 @@ int StructurelessVO::feature_detection(const cv::Mat &img, cv::Mat &descriptors)
     Mat outimg1;
     cv::drawKeypoints(img, keypoints, outimg1);
     cv::imshow("ORB features", outimg1);
+    cv::waitKey(0);
 
     return 0;
 }
@@ -152,10 +154,15 @@ int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Ma
     return 0;
 }
 
-} // namespace vslam
+void StructurelessVO::feature_visualize()
+{
+    // show matched images
+    Mat img;
+    cv::drawMatches(frame_last_.left_img_, keypoints_last_, frame_current_.left_img_, keypoints_curr_,
+                    feature_matches_, img);
+    cv::imshow("feature matches", img);
+    cv::waitKey(0);
 
-// // show matched images
-// Mat img_match_crosscheck;
-// cv::drawMatches(img_1, keypoints_1, img_2, keypoints_2, matches_crosscheck, img_match_crosscheck);
-// cv::imwrite("matches_after_cross_check.jpg", img_match_crosscheck);
-// cv::imshow("matches after cross check", img_match_crosscheck);
+}
+
+} // namespace vslam

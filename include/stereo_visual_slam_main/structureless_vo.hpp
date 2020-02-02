@@ -28,6 +28,8 @@ public:
     Frame frame_current_;
 
     vector<cv::Point3f> pts_3d_last_;
+    vector<cv::KeyPoint> keypoints_last_;
+    vector<cv::KeyPoint> keypoints_curr_;
     cv::Mat descriptors_last_;
     cv::Mat descriptors_curr_;
     vector<cv::DMatch> feature_matches_;
@@ -79,7 +81,7 @@ public:
     *  \param descriptors - the descriptors detected
     *  \return if_successful
     */
-    int feature_detection(const cv::Mat &img, cv::Mat &descriptors);
+    int feature_detection(const cv::Mat &img, vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors);
 
     /*! \brief feature matching
     *
@@ -92,10 +94,16 @@ public:
 
     /*! \brief set reference 3d positions for the last frame
     *
+    * filter the descriptors in the reference frame, calculate the 3d positions of those features
+    * 
     *  \return if successful
     */
     int set_ref_3d_position();
 
+
+    /*! \brief visualize the feature detection and matching
+    */
+    void feature_visualize();
 };
 
 } // namespace vslam
