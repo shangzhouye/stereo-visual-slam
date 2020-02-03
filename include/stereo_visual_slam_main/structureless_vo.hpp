@@ -17,13 +17,19 @@ using namespace Eigen;
 namespace vslam
 {
 
+enum TrackState
+{
+    Init,
+    Track,
+    Lost
+};
+
 class StructurelessVO
 {
 
 public:
     // eigen macro for fixed-size vectorizable Eigen types
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
-
     Frame frame_last_;
     Frame frame_current_;
 
@@ -41,8 +47,12 @@ public:
 
     int num_inliers_ = 0; // number of inliers after RANSAC
 
-    SE3 T_c_l_; // T_current(camera)_last(camera)
-    SE3 T_c_w_; // T_current(camera)_world
+    SE3 T_c_l_ = SE3(); // T_current(camera)_last(camera)
+    SE3 T_c_w_ = SE3(); // T_current(camera)_world
+
+    TrackState state_ = Init; // current tracking state
+    int seq_ = 1;             // sequence number
+    int num_lost_ = 0;        // number of continuous lost frames
 
 public:
     StructurelessVO();
@@ -71,14 +81,36 @@ public:
     *
     * The pipeline includes:
     * 1. read two frames
-    * 2. calculate the disparity map
-    * 3. feature detection and matching
-    * 4. calculate 3D position using camera model
-    * 5. solve PnP problem
+    * 2. disparity map of the last frame
+    * 3. feature detection of the last frame
+    * 4. filter features of the last frame with valid depth
+    * 5. feature detection of the current frame
+    * 6. feature matching
+    * 7. solve PnP
+    * 8. check if successful
+    * 9. move frame
+    * 10. Tcw and seq++
     * 
     *  \return if successful
     */
-    int initialization();
+    bool initialization();
+
+    /*! \brief tracking pipline
+    *
+    * The pipeline includes:
+    * 1. read current frame
+    * 2. disparity map of the last frame
+    * 3. filter features of the last frame with valid depth
+    * 4. feature detection of the current frame
+    * 5. feature matching
+    * 6. solve PnP
+    * 7. check if successful
+    * 8. move frame
+    * 9. Tcw and seq++
+    * 
+    *  \return if successful
+    */
+    bool tracking();
 
     /*! \brief feature detection
     *
@@ -112,6 +144,22 @@ public:
     /*! \brief estimate the motion using PnP
     */
     void motion_estimation();
+
+    /*! \brief check if the estimated motion is valid
+    * 
+    *  \return if valid
+    */
+    bool check_motion_estimation();
+
+    /*! \brief pipeline of the structurelessVO
+    *
+    *  \param ite_num - number of iterations
+    */
+    void VOpipeline(int ite_num);
+
+    /*! \brief move everything from current frame to last frame
+    */
+    void move_frame();
 };
 
 } // namespace vslam
