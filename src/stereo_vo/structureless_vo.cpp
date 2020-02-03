@@ -86,7 +86,10 @@ bool StructurelessVO::initialization()
 {
     // sequence starts from 1
     read_img(seq_ - 1, frame_last_.left_img_, frame_last_.right_img_);
+    frame_last_.id_ = seq_ - 1; // write the sequence number to the frame
+
     read_img(seq_, frame_current_.left_img_, frame_current_.right_img_);
+    frame_current_.id_ = seq_;
 
     disparity_map(frame_last_, frame_last_.disparity_);
 
@@ -116,6 +119,7 @@ bool StructurelessVO::initialization()
 bool StructurelessVO::tracking()
 {
     read_img(seq_, frame_current_.left_img_, frame_current_.right_img_);
+    frame_current_.id_ = seq_;
 
     disparity_map(frame_last_, frame_last_.disparity_);
 
@@ -169,7 +173,7 @@ int StructurelessVO::feature_detection(const cv::Mat &img, vector<cv::KeyPoint> 
 int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptors_2, vector<cv::DMatch> &feature_matches)
 {
     feature_matches_.clear();
-    
+
     vector<cv::DMatch> matches_crosscheck;
     // use cross check for matching
     matcher_crosscheck_->match(descriptors_1, descriptors_2, matches_crosscheck);
@@ -188,7 +192,7 @@ int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Ma
     // threshold: distance should be smaller than two times of min distance or a give threshold
     for (int i = 0; i < matches_crosscheck.size(); i++)
     {
-        if (matches_crosscheck[i].distance <= max(2.0 * min_element->distance, 20.0))
+        if (matches_crosscheck[i].distance <= max(2.0 * min_element->distance, 30.0))
         {
             feature_matches.push_back(matches_crosscheck[i]);
         }
@@ -253,7 +257,7 @@ void StructurelessVO::motion_estimation()
              0, 0, 1);
 
     Mat rvec, tvec, inliers;
-    cv::solvePnPRansac(pts3d, pts2d, K, Mat(), rvec, tvec, false, 100, 8.0, 0.99, inliers);
+    cv::solvePnPRansac(pts3d, pts2d, K, Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers);
 
     num_inliers_ = inliers.rows;
     cout << "Number of PnP inliers: " << num_inliers_ << endl;
@@ -284,7 +288,8 @@ bool StructurelessVO::check_motion_estimation()
 
     // check if the motion is too large
     Sophus::Vector6d displacement = T_c_l_.log();
-    if (displacement.norm() > 5.0)
+    double frame_gap = frame_current_.id_ - frame_last_.id_; // get the idx gap between last and current frame
+    if (displacement.norm() > (5.0 * frame_gap))
     {
         cout << "Rejected - motion is too large: " << displacement.norm() << endl;
         return false;
