@@ -9,6 +9,7 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 
 using namespace std;
 using namespace Eigen;
@@ -96,7 +97,7 @@ bool StructurelessVO::initialization()
     feature_detection(frame_current_.left_img_, keypoints_curr_, descriptors_curr_);
     feature_matching(descriptors_last_, descriptors_curr_, feature_matches_);
 
-    feature_visualize();
+    // feature_visualize();
 
     motion_estimation();
 
@@ -105,6 +106,7 @@ bool StructurelessVO::initialization()
     {
         move_frame();
         T_c_w_ = T_c_l_ * T_c_w_;
+        write_pose();
     }
     seq_++;
 
@@ -122,7 +124,7 @@ bool StructurelessVO::tracking()
     feature_detection(frame_current_.left_img_, keypoints_curr_, descriptors_curr_);
     feature_matching(descriptors_last_, descriptors_curr_, feature_matches_);
 
-    feature_visualize();
+    // feature_visualize();
 
     motion_estimation();
 
@@ -131,6 +133,7 @@ bool StructurelessVO::tracking()
     {
         move_frame();
         T_c_w_ = T_c_l_ * T_c_w_;
+        write_pose();
     }
     seq_++;
 
@@ -155,17 +158,18 @@ int StructurelessVO::feature_detection(const cv::Mat &img, vector<cv::KeyPoint> 
     descriptor_->compute(img, keypoints, descriptors);
 
     // show output image
-    Mat outimg1;
-    cv::drawKeypoints(img, keypoints, outimg1);
-    cv::imshow("ORB features", outimg1);
-    cv::waitKey(0);
+    // Mat outimg1;
+    // cv::drawKeypoints(img, keypoints, outimg1);
+    // cv::imshow("ORB features", outimg1);
+    // cv::waitKey(0);
 
     return 0;
 }
 
 int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptors_2, vector<cv::DMatch> &feature_matches)
 {
-
+    feature_matches_.clear();
+    
     vector<cv::DMatch> matches_crosscheck;
     // use cross check for matching
     matcher_crosscheck_->match(descriptors_1, descriptors_2, matches_crosscheck);
@@ -355,7 +359,21 @@ void StructurelessVO::move_frame()
     frame_last_ = frame_current_;
     keypoints_last_ = keypoints_curr_;
     descriptors_last_ = descriptors_curr_;
-    feature_matches_.clear();
+}
+
+void StructurelessVO::write_pose()
+{
+    SE3 T_w_c;
+    T_w_c = T_c_w_.inverse();
+    double x, y, z;
+    x = T_w_c.translation()(0);
+    y = T_w_c.translation()(1);
+    z = T_w_c.translation()(2);
+
+    ofstream file;
+    file.open("estimated_traj.csv", ios_base::app);
+    file << x << "," << y << "," << z << endl;
+    file.close();
 }
 
 } // namespace vslam

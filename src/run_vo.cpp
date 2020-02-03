@@ -24,7 +24,7 @@ int main(int argc, char **argv)
     nh.getParam("/dataset", dataset);
 
     vslam::StructurelessVO myVO(dataset);
-    myVO.VOpipeline(50);
+    myVO.VOpipeline(2000);
 
     ros::spin();
 

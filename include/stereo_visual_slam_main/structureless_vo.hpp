@@ -160,6 +160,12 @@ public:
     /*! \brief move everything from current frame to last frame
     */
     void move_frame();
+
+    /*! \brief write pose to csv file
+    * 
+    * three cols are x, y and z respectively
+    */
+    void write_pose();
 };
 
 } // namespace vslam
