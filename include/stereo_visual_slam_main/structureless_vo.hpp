@@ -39,6 +39,11 @@ public:
     cv::Ptr<cv::DescriptorExtractor> descriptor_;
     cv::Ptr<cv::DescriptorMatcher> matcher_crosscheck_;
 
+    int num_inliers_ = 0; // number of inliers after RANSAC
+
+    SE3 T_c_l_; // T_current(camera)_last(camera)
+    SE3 T_c_w_; // T_current(camera)_world
+
 public:
     StructurelessVO();
 
@@ -100,10 +105,13 @@ public:
     */
     int set_ref_3d_position();
 
-
     /*! \brief visualize the feature detection and matching
     */
     void feature_visualize();
+
+    /*! \brief estimate the motion using PnP
+    */
+    void motion_estimation();
 };
 
 } // namespace vslam

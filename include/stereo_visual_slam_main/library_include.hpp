@@ -4,6 +4,7 @@
 // for eigen
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <Eigen/Dense>
 
 // for Sophus
 #include "sophus/se3.hpp"

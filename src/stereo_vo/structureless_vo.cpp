@@ -91,9 +91,13 @@ int StructurelessVO::initialization()
     feature_detection(frame_last_.left_img_, keypoints_last_, descriptors_last_);
     feature_detection(frame_current_.left_img_, keypoints_curr_, descriptors_curr_);
 
+    set_ref_3d_position();
+
     feature_matching(descriptors_last_, descriptors_curr_, feature_matches_);
 
     feature_visualize();
+
+    motion_estimation();
 
     return 0;
 }
@@ -162,7 +166,70 @@ void StructurelessVO::feature_visualize()
                     feature_matches_, img);
     cv::imshow("feature matches", img);
     cv::waitKey(0);
+}
 
+int StructurelessVO::set_ref_3d_position()
+{
+    // clear existing 3D positions
+    pts_3d_last_.clear();
+
+    // create filetered descriptors for replacement
+    cv::Mat descriptors_last_filtered;
+    vector<cv::KeyPoint> keypoints_last_filtered;
+
+    for (size_t i = 0; i < keypoints_last_.size(); i++)
+    {
+        Vector3d pos_3d = frame_last_.find_3d(keypoints_last_.at(i));
+        // filer out points with no depth information (disparity value = -1)
+        if (pos_3d(2) > 0)
+        {
+            pts_3d_last_.push_back(cv::Point3f(pos_3d(0), pos_3d(1), pos_3d(2)));
+            descriptors_last_filtered.push_back(descriptors_last_.row(i));
+            keypoints_last_filtered.push_back(keypoints_last_.at(i));
+        }
+    }
+
+    // copy the filtered descriptors;
+    descriptors_last_ = descriptors_last_filtered;
+    keypoints_last_ = keypoints_last_filtered;
+}
+
+void StructurelessVO::motion_estimation()
+{
+    // 3D positions from the last frame
+    // 2D pixels in current frame
+    vector<cv::Point3f> pts3d;
+    vector<cv::Point2f> pts2d;
+
+    for (cv::DMatch m : feature_matches_)
+    {
+        pts3d.push_back(pts_3d_last_[m.queryIdx]);
+        pts2d.push_back(keypoints_curr_[m.trainIdx].pt);
+    }
+
+    Mat K = (cv::Mat_<double>(3, 3) << frame_last_.fx_, 0, frame_last_.cx_,
+             0, frame_last_.fy_, frame_last_.cy_,
+             0, 0, 1);
+
+    Mat rvec, tvec, inliers;
+    cv::solvePnPRansac(pts3d, pts2d, K, Mat(), rvec, tvec, false, 100, 8.0, 0.99, inliers);
+
+    num_inliers_ = inliers.rows;
+    cout << "Number of PnP inliers: " << num_inliers_ << endl;
+
+    // transfer rvec to matrix
+    Mat SO3_R_cv;
+    cv::Rodrigues(rvec, SO3_R_cv);
+    Matrix3d SO3_R;
+    SO3_R << SO3_R_cv.at<double>(0, 0), SO3_R_cv.at<double>(0, 1), SO3_R_cv.at<double>(0, 2),
+        SO3_R_cv.at<double>(1, 0), SO3_R_cv.at<double>(1, 1), SO3_R_cv.at<double>(1, 2),
+        SO3_R_cv.at<double>(2, 0), SO3_R_cv.at<double>(2, 1), SO3_R_cv.at<double>(2, 2);
+
+    T_c_l_ = SE3(
+        SO3_R,
+        Vector3d(tvec.at<double>(0, 0), tvec.at<double>(1, 0), tvec.at<double>(2, 0)));
+
+    cout << "T_c_l Translation x: " << tvec.at<double>(0, 0) << "; y: " << tvec.at<double>(1, 0) << "; z: " << tvec.at<double>(2, 0) << endl;
 }
 
 } // namespace vslam

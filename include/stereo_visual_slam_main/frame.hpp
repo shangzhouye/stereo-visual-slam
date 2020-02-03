@@ -37,7 +37,14 @@ public:
     Frame(int id, double timestamp, const Mat &left, const Mat &right)
         : id_(id), time_stamp_(timestamp), left_img_(left), right_img_(right) {}
 
-    Vector3d find_3d(const cv::KeyPoint& kp);
+    Vector3d find_3d(const cv::KeyPoint &kp)
+    {
+        double x = (kp.pt.x - cx_) / fx_;
+        double y = (kp.pt.y - cy_) / fy_;
+        double depth = fx_ * b_ / (disparity_.at<float>(kp.pt.y, kp.pt.x));
+
+        return Vector3d(x * depth, y * depth, depth);
+    }
 };
 
 } // namespace vslam
