@@ -117,10 +117,10 @@ bool StructurelessVO::initialization()
     bool check = check_motion_estimation();
     if (check)
     {
-        rviz_visualize();
+        // rviz_visualize();
         move_frame();
         T_c_w_ = T_c_l_ * T_c_w_;
-        // write_pose();
+        write_pose();
     }
     seq_++;
 
@@ -146,10 +146,10 @@ bool StructurelessVO::tracking()
     bool check = check_motion_estimation();
     if (check)
     {
-        rviz_visualize();
+        // rviz_visualize();
         move_frame();
         T_c_w_ = T_c_l_ * T_c_w_;
-        // write_pose();
+        write_pose();
     }
     seq_++;
 
@@ -387,14 +387,27 @@ void StructurelessVO::write_pose()
 {
     SE3 T_w_c;
     T_w_c = T_c_w_.inverse();
-    double x, y, z;
-    x = T_w_c.translation()(0);
-    y = T_w_c.translation()(1);
-    z = T_w_c.translation()(2);
+    double r00, r01, r02, r10, r11, r12, r20, r21, r22, x, y, z;
+    Eigen::Matrix3d rotation = T_w_c.rotationMatrix();
+    Eigen::Vector3d translation = T_w_c.translation();
+    r00 = rotation(0, 0);
+    r01 = rotation(0, 1);
+    r02 = rotation(0, 2);
+    r10 = rotation(1, 0);
+    r11 = rotation(1, 1);
+    r12 = rotation(1, 2);
+    r20 = rotation(2, 0);
+    r21 = rotation(2, 1);
+    r22 = rotation(2, 2);
+    x = translation(0);
+    y = translation(1);
+    z = translation(2);
 
     ofstream file;
-    file.open("estimated_traj.csv", ios_base::app);
-    file << x << "," << y << "," << z << endl;
+    file.open("estimated_traj.txt", ios_base::app);
+    file << r00 << " " << r01 << " " << r02 << " " << x << " "
+         << r10 << " " << r11 << " " << r12 << " " << y << " "
+         << r20 << " " << r21 << " " << r22 << " " << z << endl;
     file.close();
 }
 
@@ -404,7 +417,7 @@ void StructurelessVO::rviz_visualize()
     Mat outimg;
     cv::drawKeypoints(frame_last_.left_img_, keypoints_last_, outimg);
     cv::imshow("ORB features", outimg);
-    cv::waitKey(5);
+    cv::waitKey(1);
 
     // std_msgs::Header header;
     // header.stamp = ros::Time::now();
