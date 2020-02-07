@@ -13,6 +13,7 @@
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
+#include <stereo_visual_slam_main/visualization.hpp>
 
 using namespace std;
 using namespace Eigen;
@@ -60,6 +61,9 @@ public:
     // for publishing images
     image_transport::ImageTransport it_;
     image_transport::Publisher image_pub_;
+
+    // visualization module
+    VslamVisual my_visual_;
 
 public:
     StructurelessVO(ros::NodeHandle &nh);

@@ -151,12 +151,15 @@ include_directories(${Sophus_INCLUDE_DIRS})
 add_library(frame src/stereo_vo/frame.cpp)
 add_dependencies(frame ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_library(structureless_vo src/stereo_vo/structureless_vo.cpp)
-add_dependencies(structureless_vo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} frame)
+add_library(visualization src/stereo_vo/visualization.cpp)
+add_dependencies(visualization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_library(structureless_vo src/stereo_vo/structureless_vo.cpp src/stereo_vo/visualization.cpp src/stereo_vo/frame.cpp)
+add_dependencies(structureless_vo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} frame visualization)
 
 add_executable(${PROJECT_NAME}_run_vo src/run_vo.cpp)
 set_target_properties(${PROJECT_NAME}_run_vo PROPERTIES OUTPUT_NAME run_vo PREFIX "")
-add_dependencies(${PROJECT_NAME}_run_vo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} frame structureless_vo)
+add_dependencies(${PROJECT_NAME}_run_vo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} frame structureless_vo visualization)
 target_link_libraries(${PROJECT_NAME}_run_vo frame structureless_vo ${catkin_LIBRARIES} ${OpenCV_LIBS} ${Sophus_LIBRARIES})
 
 ## Rename C++ executable without prefix

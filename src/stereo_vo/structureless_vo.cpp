@@ -14,6 +14,8 @@
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/Image.h>
+#include <stereo_visual_slam_main/visualization.hpp>
 
 using namespace std;
 using namespace Eigen;
@@ -21,7 +23,7 @@ using namespace Eigen;
 namespace vslam
 {
 
-StructurelessVO::StructurelessVO(ros::NodeHandle &nh) : it_(nh)
+StructurelessVO::StructurelessVO(ros::NodeHandle &nh) : it_(nh), my_visual_(nh)
 {
     detector_ = cv::ORB::create();
     descriptor_ = cv::ORB::create();
@@ -30,7 +32,7 @@ StructurelessVO::StructurelessVO(ros::NodeHandle &nh) : it_(nh)
     image_transport::Publisher image_pub_ = it_.advertise("vslam/feature_image", 1);
 }
 
-StructurelessVO::StructurelessVO(string dataset, ros::NodeHandle &nh) : it_(nh)
+StructurelessVO::StructurelessVO(string dataset, ros::NodeHandle &nh) : it_(nh), my_visual_(nh)
 {
     dataset_ = dataset;
     detector_ = cv::ORB::create();
@@ -411,6 +413,10 @@ void StructurelessVO::rviz_visualize()
     // sensor_msgs::ImagePtr rendered_image_msg = cv_bridge::CvImage(header, "bgr8", outimg).toImageMsg();
     // image_pub_.publish(rendered_image_msg);
     // ros::spinOnce();
+
+    // publish feature map
+    my_visual_.publish_feature_map(pts_3d_last_);
+    ros::spinOnce();
 }
 
 } // namespace vslam
