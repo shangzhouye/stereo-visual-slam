@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   cv_bridge
   image_transport
+  tf
 )
 
 ## System dependencies are found with CMake's conventions
@@ -70,11 +71,11 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
- generate_messages(
-   DEPENDENCIES
-   sensor_msgs
+# generate_messages(
+#   DEPENDENCIES
+#   sensor_msgs
 #   std_msgs  # Or other packages containing msgs
- )
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -108,7 +109,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES stereo_visual_slam_main
-  CATKIN_DEPENDS roscpp message_runtime sensor_msgs cv_bridge image_transport
+  CATKIN_DEPENDS roscpp message_runtime sensor_msgs cv_bridge image_transport tf
 #  DEPENDS system_lib
 )
 

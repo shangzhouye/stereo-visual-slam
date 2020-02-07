@@ -49,6 +49,13 @@ public:
     *  \return if successful
     */
     int publish_feature_map(const vector<cv::Point3f> &point_3d);
+
+    /*! \brief Publish the transformation
+    *
+    *  \param T_c_w - T_current(camera)_world
+    *  \return if successful
+    */
+    int publish_transform(const SE3 &T_c_w);
 };
 
 } // namespace vslam

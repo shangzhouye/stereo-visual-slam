@@ -416,6 +416,9 @@ void StructurelessVO::rviz_visualize()
 
     // publish feature map
     my_visual_.publish_feature_map(pts_3d_last_);
+
+    // publish transform
+    my_visual_.publish_transform(T_c_w_);
     ros::spinOnce();
 }
 

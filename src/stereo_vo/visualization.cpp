@@ -13,6 +13,8 @@
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/Image.h>
 #include <stereo_visual_slam_main/visualization.hpp>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
 
 namespace vslam
 {
@@ -30,7 +32,7 @@ int VslamVisual::points_to_feature_map(const vector<cv::Point3f> &point_3d)
     feature_map_.header.stamp = ros::Time::now();
 
     // Modify this to current frame
-    feature_map_.header.frame_id = "/map";
+    feature_map_.header.frame_id = "/camera";
 
     feature_map_.height = 1;
     feature_map_.width = point_3d.size();
@@ -72,6 +74,30 @@ int VslamVisual::publish_feature_map(const vector<cv::Point3f> &point_3d)
     points_to_feature_map(point_3d);
     feature_map_publisher_.publish(feature_map_);
     return 0;
+}
+
+int VslamVisual::publish_transform(const SE3 &T_c_w)
+{
+    SE3 T_w_c;
+    T_w_c = T_c_w.inverse(); // T_world_current(camera)
+
+    Eigen::Matrix3d rotation = T_w_c.rotationMatrix();
+    Eigen::Vector3d translation = T_w_c.translation();
+
+    // extract sohpus transformation to tf format
+    tf::Matrix3x3 tf_rotation(rotation(0, 0), rotation(0, 1), rotation(0, 2),
+                              rotation(1, 0), rotation(1, 1), rotation(1, 2),
+                              rotation(2, 0), rotation(2, 1), rotation(2, 2));
+
+    tf::Vector3 tf_translation(translation(0), translation(1), translation(2));
+
+    tf::Transform tf_transformation(tf_rotation, tf_translation);
+
+
+    // publish the tf
+    static tf::TransformBroadcaster tf_broadcaster;
+    tf_broadcaster.sendTransform(tf::StampedTransform(tf_transformation, ros::Time::now(), "/map", "/camera"));
+
 }
 
 } // namespace vslam
