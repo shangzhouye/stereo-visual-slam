@@ -9,6 +9,10 @@ project(stereo_visual_slam_main)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  message_generation
+  sensor_msgs
+  cv_bridge
+  image_transport
 )
 
 ## System dependencies are found with CMake's conventions
@@ -66,10 +70,11 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
+ generate_messages(
+   DEPENDENCIES
+   sensor_msgs
 #   std_msgs  # Or other packages containing msgs
-# )
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -103,7 +108,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES stereo_visual_slam_main
-#  CATKIN_DEPENDS roscpp
+  CATKIN_DEPENDS roscpp message_runtime sensor_msgs cv_bridge image_transport
 #  DEPENDS system_lib
 )
 
@@ -136,7 +141,7 @@ include_directories(
 # add_executable(${PROJECT_NAME}_node src/stereo_visual_slam_main_node.cpp)
 
 # OpenCV
-find_package(OpenCV 3.1 REQUIRED)
+find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 # Sophus

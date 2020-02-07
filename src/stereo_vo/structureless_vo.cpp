@@ -10,6 +10,10 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include "ros/ros.h"
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/image_encodings.h>
 
 using namespace std;
 using namespace Eigen;
@@ -17,19 +21,23 @@ using namespace Eigen;
 namespace vslam
 {
 
-StructurelessVO::StructurelessVO()
+StructurelessVO::StructurelessVO(ros::NodeHandle &nh) : it_(nh)
 {
     detector_ = cv::ORB::create();
     descriptor_ = cv::ORB::create();
     matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
+
+    image_transport::Publisher image_pub_ = it_.advertise("vslam/feature_image", 1);
 }
 
-StructurelessVO::StructurelessVO(string dataset)
+StructurelessVO::StructurelessVO(string dataset, ros::NodeHandle &nh) : it_(nh)
 {
     dataset_ = dataset;
     detector_ = cv::ORB::create();
     descriptor_ = cv::ORB::create();
     matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
+
+    image_transport::Publisher image_pub_ = it_.advertise("vslam/feature_image", 1);
 }
 
 int StructurelessVO::read_img(int id, cv::Mat &left_img, cv::Mat &right_img)
@@ -107,9 +115,10 @@ bool StructurelessVO::initialization()
     bool check = check_motion_estimation();
     if (check)
     {
+        rviz_visualize();
         move_frame();
         T_c_w_ = T_c_l_ * T_c_w_;
-        write_pose();
+        // write_pose();
     }
     seq_++;
 
@@ -135,13 +144,14 @@ bool StructurelessVO::tracking()
     bool check = check_motion_estimation();
     if (check)
     {
+        rviz_visualize();
         move_frame();
         T_c_w_ = T_c_l_ * T_c_w_;
-        write_pose();
+        // write_pose();
     }
     seq_++;
 
-    cout << "World origin in camera frame: " << T_c_w_.translation() << endl;
+    // cout << "World origin in camera frame: " << T_c_w_.translation() << endl;
 
     return check;
 }
@@ -177,7 +187,7 @@ int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Ma
     vector<cv::DMatch> matches_crosscheck;
     // use cross check for matching
     matcher_crosscheck_->match(descriptors_1, descriptors_2, matches_crosscheck);
-    cout << "Number of matches after cross check: " << matches_crosscheck.size() << endl;
+    // cout << "Number of matches after cross check: " << matches_crosscheck.size() << endl;
 
     // calculate the min/max distance
     auto min_max = minmax_element(matches_crosscheck.begin(), matches_crosscheck.end(), [](const auto &lhs, const auto &rhs) {
@@ -186,8 +196,8 @@ int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Ma
 
     auto min_element = min_max.first;
     auto max_element = min_max.second;
-    cout << "Min distance: " << min_element->distance << endl;
-    cout << "Max distance: " << max_element->distance << endl;
+    // cout << "Min distance: " << min_element->distance << endl;
+    // cout << "Max distance: " << max_element->distance << endl;
 
     // threshold: distance should be smaller than two times of min distance or a give threshold
     for (int i = 0; i < matches_crosscheck.size(); i++)
@@ -198,7 +208,7 @@ int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Ma
         }
     }
 
-    cout << "Number of matches after threshold: " << feature_matches.size() << endl;
+    // cout << "Number of matches after threshold: " << feature_matches.size() << endl;
 
     return 0;
 }
@@ -260,7 +270,7 @@ void StructurelessVO::motion_estimation()
     cv::solvePnPRansac(pts3d, pts2d, K, Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers);
 
     num_inliers_ = inliers.rows;
-    cout << "Number of PnP inliers: " << num_inliers_ << endl;
+    // cout << "Number of PnP inliers: " << num_inliers_ << endl;
 
     // transfer rvec to matrix
     Mat SO3_R_cv;
@@ -274,7 +284,7 @@ void StructurelessVO::motion_estimation()
         SO3_R,
         Vector3d(tvec.at<double>(0, 0), tvec.at<double>(1, 0), tvec.at<double>(2, 0)));
 
-    cout << "T_c_l Translation x: " << tvec.at<double>(0, 0) << "; y: " << tvec.at<double>(1, 0) << "; z: " << tvec.at<double>(2, 0) << endl;
+    // cout << "T_c_l Translation x: " << tvec.at<double>(0, 0) << "; y: " << tvec.at<double>(1, 0) << "; z: " << tvec.at<double>(2, 0) << endl;
 }
 
 bool StructurelessVO::check_motion_estimation()
@@ -311,6 +321,7 @@ void StructurelessVO::VOpipeline(int ite_num)
 
     for (size_t ite = 0; ite < ite_num; ite++)
     {
+        // ros::Time time_start = ros::Time::now();
 
         switch (state_)
         {
@@ -356,6 +367,10 @@ void StructurelessVO::VOpipeline(int ite_num)
             cout << "Invalid state" << endl;
             break;
         }
+
+        // ros::Time time_end = ros::Time::now();
+        // ROS_INFO("Time for this loop is: %f", (time_end - time_start).toSec());
+        ros::spinOnce();
     }
 }
 
@@ -379,6 +394,23 @@ void StructurelessVO::write_pose()
     file.open("estimated_traj.csv", ios_base::app);
     file << x << "," << y << "," << z << endl;
     file.close();
+}
+
+void StructurelessVO::rviz_visualize()
+{
+    // currently using opencv to show the image
+    Mat outimg;
+    cv::drawKeypoints(frame_last_.left_img_, keypoints_last_, outimg);
+    cv::imshow("ORB features", outimg);
+    cv::waitKey(5);
+
+    // std_msgs::Header header;
+    // header.stamp = ros::Time::now();
+    // header.seq = frame_last_.id_;
+    // header.frame_id = "/map";
+    // sensor_msgs::ImagePtr rendered_image_msg = cv_bridge::CvImage(header, "bgr8", outimg).toImageMsg();
+    // image_pub_.publish(rendered_image_msg);
+    // ros::spinOnce();
 }
 
 } // namespace vslam

@@ -10,6 +10,9 @@
 #include <vector>
 #include <string>
 #include <unistd.h>
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/image_encodings.h>
 
 using namespace std;
 using namespace Eigen;
@@ -54,14 +57,19 @@ public:
     int seq_ = 1;             // sequence number
     int num_lost_ = 0;        // number of continuous lost frames
 
+    // for publishing images
+    image_transport::ImageTransport it_;
+    image_transport::Publisher image_pub_;
+
 public:
-    StructurelessVO();
+    StructurelessVO(ros::NodeHandle &nh);
 
     /*! \brief initialize StructurelessVO
     *
     *  \param dataset - the address of the dataset
+    *  \param nh - the node handle
     */
-    StructurelessVO(string dataset);
+    StructurelessVO(string dataset, ros::NodeHandle &nh);
 
     /*! \brief read left and right images into a frame
     *
@@ -166,6 +174,11 @@ public:
     * three cols are x, y and z respectively
     */
     void write_pose();
+
+    /*! \brief publish pose, pointcloud, image to rviz
+    * 
+    */
+    void rviz_visualize();
 };
 
 } // namespace vslam

@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>stereo_visual_slam_main</name>
-  <version>0.0.0</version>
-  <description>The stereo_visual_slam_main package</description>
+  <version>0.0.1</version>
+  <description>The stereo visual slam package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="shangzhouye@todo.todo">shangzhouye</maintainer>
+  <maintainer email="shangzhouye@gmail.com">shangzhouye</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>TODO</license>
+  <license>BSD</license>
 
 
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
@@ -50,8 +50,19 @@
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roscpp</build_depend>
+  <build_depend>message_generation</build_depend>
   <build_export_depend>roscpp</build_export_depend>
   <exec_depend>roscpp</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+
+  <build_depend>sensor_msgs</build_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+
+  <build_depend>cv_bridge</build_depend>
+  <exec_depend>cv_bridge</exec_depend>
+
+  <build_depend>image_transport</build_depend>
+  <exec_depend>image_transport</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

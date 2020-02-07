@@ -6,4 +6,6 @@
 
     <node name="run_vo" pkg="stereo_visual_slam_main" type="run_vo" output="screen"/>
 
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find stereo_visual_slam_main)/config/kitti_config.rviz"/>
+
 </launch>

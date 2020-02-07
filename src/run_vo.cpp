@@ -23,7 +23,7 @@ int main(int argc, char **argv)
     string dataset;
     nh.getParam("/dataset", dataset);
 
-    vslam::StructurelessVO myVO(dataset);
+    vslam::StructurelessVO myVO(dataset, nh);
     myVO.VOpipeline(2000);
 
     ros::spin();
