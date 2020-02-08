@@ -183,6 +183,13 @@ public:
     * 
     */
     void rviz_visualize();
+
+    /*! \brief adaptive non-maximal supression algorithm to generate uniformly distributed feature points
+    *  \param keypoints - keypoints list
+    *  \param num - number of keypoints to keep
+    */
+    void adaptive_non_maximal_suppresion(std::vector<cv::KeyPoint> &keypoints,
+                                                          const int num);
 };
 
 } // namespace vslam

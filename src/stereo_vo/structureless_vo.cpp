@@ -25,7 +25,7 @@ namespace vslam
 
 StructurelessVO::StructurelessVO(ros::NodeHandle &nh) : it_(nh), my_visual_(nh)
 {
-    detector_ = cv::ORB::create();
+    detector_ = cv::ORB::create(3000);
     descriptor_ = cv::ORB::create();
     matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
 
@@ -35,7 +35,7 @@ StructurelessVO::StructurelessVO(ros::NodeHandle &nh) : it_(nh), my_visual_(nh)
 StructurelessVO::StructurelessVO(string dataset, ros::NodeHandle &nh) : it_(nh), my_visual_(nh)
 {
     dataset_ = dataset;
-    detector_ = cv::ORB::create();
+    detector_ = cv::ORB::create(3000);
     descriptor_ = cv::ORB::create();
     matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
 
@@ -170,6 +170,8 @@ int StructurelessVO::feature_detection(const cv::Mat &img, vector<cv::KeyPoint> 
     // feature detection (Oriented FAST)
     detector_->detect(img, keypoints);
 
+    adaptive_non_maximal_suppresion(keypoints, 500);
+
     // BRIEF describer
     descriptor_->compute(img, keypoints, descriptors);
 
@@ -180,6 +182,69 @@ int StructurelessVO::feature_detection(const cv::Mat &img, vector<cv::KeyPoint> 
     // cv::waitKey(0);
 
     return 0;
+}
+
+void StructurelessVO::adaptive_non_maximal_suppresion(std::vector<cv::KeyPoint> &keypoints,
+                                                      const int num)
+{
+    // if number of keypoints is already lower than the threshold, return
+    if (keypoints.size() < num)
+    {
+        return;
+    }
+
+    // sort the keypoints according to its reponse (strength)
+    std::sort(keypoints.begin(), keypoints.end(), [&](const cv::KeyPoint &lhs, const cv::KeyPoint &rhs) {
+        return lhs.response > rhs.response;
+    });
+
+    // vector for store ANMS points
+    std::vector<cv::KeyPoint> ANMSpt;
+
+    std::vector<double> rad_i;
+    rad_i.resize(keypoints.size());
+
+    std::vector<double> rad_i_sorted;
+    rad_i_sorted.resize(keypoints.size());
+
+    // robust coefficient: 1/0.9 = 1.1
+    const float c_robust = 1.11;
+
+    // computing the suppression radius for each feature (strongest overall has radius of infinity)
+    // the smallest distance to another point that is significantly stronger (based on a robustness parameter)
+    for (int i = 0; i < keypoints.size(); ++i)
+    {
+        const float response = keypoints[i].response * c_robust;
+
+        // maximum finit number of double
+        double radius = std::numeric_limits<double>::max();
+
+        for (int j = 0; j < i && keypoints[j].response > response; ++j)
+        {
+            radius = std::min(radius, cv::norm(keypoints[i].pt - keypoints[j].pt));
+        }
+
+        rad_i[i] = radius;
+        rad_i_sorted[i] = radius;
+    }
+
+    // sort it
+    std::sort(rad_i_sorted.begin(), rad_i_sorted.end(), [&](const double &lhs, const double &rhs) {
+        return lhs > rhs;
+    });
+
+    // find the final radius
+    const double final_radius = rad_i_sorted[num];
+    for (int i = 0; i < rad_i.size(); ++i)
+    {
+        if (rad_i[i] >= final_radius)
+        {
+            ANMSpt.push_back(keypoints[i]);
+        }
+    }
+
+    // swap address to keypoints, O(1) time
+    keypoints.swap(ANMSpt);
 }
 
 int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptors_2, vector<cv::DMatch> &feature_matches)
@@ -294,6 +359,7 @@ bool StructurelessVO::check_motion_estimation()
     // check the number of inliers
     if (num_inliers_ < 10)
     {
+        cout << "Frame id: " << frame_last_.id_ << " and " << frame_current_.id_ << endl;
         cout << "Rejected - inliers not enough: " << num_inliers_ << endl;
         return false;
     }
@@ -303,6 +369,7 @@ bool StructurelessVO::check_motion_estimation()
     double frame_gap = frame_current_.id_ - frame_last_.id_; // get the idx gap between last and current frame
     if (displacement.norm() > (5.0 * frame_gap))
     {
+        cout << "Frame id: " << frame_last_.id_ << " and " << frame_current_.id_ << endl;
         cout << "Rejected - motion is too large: " << displacement.norm() << endl;
         return false;
     }
@@ -311,6 +378,7 @@ bool StructurelessVO::check_motion_estimation()
     Vector3d translation = T_c_l_.translation();
     if (translation(2) > 0.5)
     {
+        cout << "Frame id: " << frame_last_.id_ << " and " << frame_current_.id_ << endl;
         cout << "Rejected - motion is backward: " << T_c_l_.transZ << endl;
         return false;
     }
