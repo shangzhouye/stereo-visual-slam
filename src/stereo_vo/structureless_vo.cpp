@@ -86,8 +86,8 @@ int StructurelessVO::disparity_map(const Frame &frame, cv::Mat &disparity)
     sgbm->compute(frame.left_img_, frame.right_img_, disparity_sgbm);
     disparity_sgbm.convertTo(disparity, CV_32F, 1.0 / 16.0f); // confirm 1/16 here later
 
-    // cv::imshow("disparity", disparity / 96.0);
-    // cv::waitKey(0);
+    cv::imshow("disparity", disparity / 96.0);
+    cv::waitKey(1);
 
     return 0;
 }
@@ -110,17 +110,17 @@ bool StructurelessVO::initialization()
     feature_detection(frame_current_.left_img_, keypoints_curr_, descriptors_curr_);
     feature_matching(descriptors_last_, descriptors_curr_, feature_matches_);
 
-    // feature_visualize();
+    feature_visualize();
 
     motion_estimation();
 
     bool check = check_motion_estimation();
     if (check)
     {
-        // rviz_visualize();
+        rviz_visualize();
         move_frame();
         T_c_w_ = T_c_l_ * T_c_w_;
-        write_pose();
+        // write_pose();
     }
     seq_++;
 
@@ -139,17 +139,17 @@ bool StructurelessVO::tracking()
     feature_detection(frame_current_.left_img_, keypoints_curr_, descriptors_curr_);
     feature_matching(descriptors_last_, descriptors_curr_, feature_matches_);
 
-    // feature_visualize();
+    feature_visualize();
 
     motion_estimation();
 
     bool check = check_motion_estimation();
     if (check)
     {
-        // rviz_visualize();
+        rviz_visualize();
         move_frame();
         T_c_w_ = T_c_l_ * T_c_w_;
-        write_pose();
+        // write_pose();
     }
     seq_++;
 
@@ -189,7 +189,7 @@ int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Ma
     vector<cv::DMatch> matches_crosscheck;
     // use cross check for matching
     matcher_crosscheck_->match(descriptors_1, descriptors_2, matches_crosscheck);
-    // cout << "Number of matches after cross check: " << matches_crosscheck.size() << endl;
+    cout << "Number of matches after cross check: " << matches_crosscheck.size() << endl;
 
     // calculate the min/max distance
     auto min_max = minmax_element(matches_crosscheck.begin(), matches_crosscheck.end(), [](const auto &lhs, const auto &rhs) {
@@ -198,8 +198,8 @@ int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Ma
 
     auto min_element = min_max.first;
     auto max_element = min_max.second;
-    // cout << "Min distance: " << min_element->distance << endl;
-    // cout << "Max distance: " << max_element->distance << endl;
+    cout << "Min distance: " << min_element->distance << endl;
+    cout << "Max distance: " << max_element->distance << endl;
 
     // threshold: distance should be smaller than two times of min distance or a give threshold
     for (int i = 0; i < matches_crosscheck.size(); i++)
@@ -210,7 +210,7 @@ int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Ma
         }
     }
 
-    // cout << "Number of matches after threshold: " << feature_matches.size() << endl;
+    cout << "Number of matches after threshold: " << feature_matches.size() << endl;
 
     return 0;
 }
@@ -222,7 +222,7 @@ void StructurelessVO::feature_visualize()
     cv::drawMatches(frame_last_.left_img_, keypoints_last_, frame_current_.left_img_, keypoints_curr_,
                     feature_matches_, img);
     cv::imshow("feature matches", img);
-    cv::waitKey(0);
+    cv::waitKey(1);
 }
 
 int StructurelessVO::set_ref_3d_position()
@@ -272,7 +272,7 @@ void StructurelessVO::motion_estimation()
     cv::solvePnPRansac(pts3d, pts2d, K, Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers);
 
     num_inliers_ = inliers.rows;
-    // cout << "Number of PnP inliers: " << num_inliers_ << endl;
+    cout << "Number of PnP inliers: " << num_inliers_ << endl;
 
     // transfer rvec to matrix
     Mat SO3_R_cv;
@@ -362,7 +362,7 @@ void StructurelessVO::VOpipeline(int ite_num)
         }
         case Lost:
         {
-            cout << "VO IS LOST" << endl;
+            // cout << "VO IS LOST" << endl;
             break;
         }
         default:
@@ -405,7 +405,12 @@ void StructurelessVO::write_pose()
 
     ofstream file;
     file.open("estimated_traj.txt", ios_base::app);
-    file << r00 << " " << r01 << " " << r02 << " " << x << " "
+    // file << r00 << " " << r01 << " " << r02 << " " << x << " "
+    //      << r10 << " " << r11 << " " << r12 << " " << y << " "
+    //      << r20 << " " << r21 << " " << r22 << " " << z << endl;
+
+    // alows dropping frame
+    file << "99 " << r00 << " " << r01 << " " << r02 << " " << x << " "
          << r10 << " " << r11 << " " << r12 << " " << y << " "
          << r20 << " " << r21 << " " << r22 << " " << z << endl;
     file.close();
