@@ -117,10 +117,10 @@ bool StructurelessVO::initialization()
     bool check = check_motion_estimation();
     if (check)
     {
-        // rviz_visualize();
-        move_frame();
         T_c_w_ = T_c_l_ * T_c_w_;
-        write_pose();
+        // write_pose();
+        rviz_visualize();
+        move_frame();
     }
     seq_++;
 
@@ -146,10 +146,10 @@ bool StructurelessVO::tracking()
     bool check = check_motion_estimation();
     if (check)
     {
-        // rviz_visualize();
-        move_frame();
         T_c_w_ = T_c_l_ * T_c_w_;
-        write_pose();
+        // write_pose();
+        rviz_visualize();
+        move_frame();
     }
     seq_++;
 
@@ -473,12 +473,9 @@ void StructurelessVO::write_pose()
 
     ofstream file;
     file.open("estimated_traj.txt", ios_base::app);
-    // file << r00 << " " << r01 << " " << r02 << " " << x << " "
-    //      << r10 << " " << r11 << " " << r12 << " " << y << " "
-    //      << r20 << " " << r21 << " " << r22 << " " << z << endl;
 
     // alows dropping frame
-    file << "99 " << r00 << " " << r01 << " " << r02 << " " << x << " "
+    file << frame_current_.id_ << " " << r00 << " " << r01 << " " << r02 << " " << x << " "
          << r10 << " " << r11 << " " << r12 << " " << y << " "
          << r20 << " " << r21 << " " << r22 << " " << z << endl;
     file.close();
