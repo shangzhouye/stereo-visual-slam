@@ -14,6 +14,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 #include <stereo_visual_slam_main/visualization.hpp>
+#include <stereo_visual_slam_main/optimization.hpp>
 
 using namespace std;
 using namespace Eigen;
@@ -189,7 +190,17 @@ public:
     *  \param num - number of keypoints to keep
     */
     void adaptive_non_maximal_suppresion(std::vector<cv::KeyPoint> &keypoints,
-                                                          const int num);
+                                         const int num);
+
+    
+    /*! \brief single frame nonlinear optimization using g2o after PnP
+    *  \param points_3d - 3D landmark points
+    *  \param points_2d - 2D corresponding points in the image
+    *  \param K - intrinsic matrix K
+    *  \param pose - the pose to be optimized
+    */
+    void single_frame_optimization(const G2OVector3d &points_3d, const G2OVector2d &points_2d,
+                             const cv::Mat &K, Sophus::SE3d &pose);
 };
 
 } // namespace vslam

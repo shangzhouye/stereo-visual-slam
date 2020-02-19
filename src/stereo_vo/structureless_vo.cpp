@@ -16,6 +16,7 @@
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/Image.h>
 #include <stereo_visual_slam_main/visualization.hpp>
+#include <stereo_visual_slam_main/optimization.hpp>
 
 using namespace std;
 using namespace Eigen;
@@ -352,6 +353,23 @@ void StructurelessVO::motion_estimation()
         Vector3d(tvec.at<double>(0, 0), tvec.at<double>(1, 0), tvec.at<double>(2, 0)));
 
     // cout << "T_c_l Translation x: " << tvec.at<double>(0, 0) << "; y: " << tvec.at<double>(1, 0) << "; z: " << tvec.at<double>(2, 0) << endl;
+
+    // convert cv point to eigen vector
+    // only include inliers
+    G2OVector2d g2o_pts2d;
+    g2o_pts2d.resize(inliers.rows);
+    G2OVector3d g2o_pts3d;
+    g2o_pts3d.resize(inliers.rows);
+
+    for (int idx = 0; idx < inliers.rows; idx++)
+    {
+        int index = inliers.at<int>(idx,0);
+        g2o_pts2d[idx] << pts2d[index].x, pts2d[index].y;
+        g2o_pts3d[idx] << pts3d[index].x, pts3d[index].y, pts3d[index].z;
+    }
+
+    // add nonlinear optimization
+    single_frame_optimization(g2o_pts3d, g2o_pts2d, K, T_c_l_);
 }
 
 bool StructurelessVO::check_motion_estimation()
@@ -431,10 +449,12 @@ void StructurelessVO::VOpipeline(int ite_num)
         case Lost:
         {
             cout << "VO IS LOST" << endl;
+            return;
             break;
         }
         default:
             cout << "Invalid state" << endl;
+            return;
             break;
         }
 
@@ -503,6 +523,58 @@ void StructurelessVO::rviz_visualize()
     // publish transform
     my_visual_.publish_transform(T_c_w_);
     ros::spinOnce();
+}
+
+void StructurelessVO::single_frame_optimization(const G2OVector3d &points_3d, const G2OVector2d &points_2d,
+                                                const cv::Mat &K, Sophus::SE3d &pose)
+{
+    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> BlockSolverType;
+    typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType;
+
+    // Use GaussNewton Method
+    auto solver = new g2o::OptimizationAlgorithmGaussNewton(
+        g2o::make_unique<BlockSolverType>(g2o::make_unique<LinearSolverType>()));
+    g2o::SparseOptimizer optimizer;
+    optimizer.setAlgorithm(solver);
+    // optimizer.setVerbose(true);
+
+    // vertex
+    VertexPose *vertex_pose = new VertexPose();
+    // there is only one vertex: vertex 0
+    vertex_pose->setId(0);
+    vertex_pose->setEstimate(Sophus::SE3d());
+    optimizer.addVertex(vertex_pose);
+
+    // K
+    Eigen::Matrix3d K_eigen;
+    K_eigen << K.at<double>(0, 0), K.at<double>(0, 1), K.at<double>(0, 2),
+        K.at<double>(1, 0), K.at<double>(1, 1), K.at<double>(1, 2),
+        K.at<double>(2, 0), K.at<double>(2, 1), K.at<double>(2, 2);
+
+    // edges
+    int index = 1;
+    for (size_t i = 0; i < points_2d.size(); ++i)
+    {
+        auto p2d = points_2d[i];
+        auto p3d = points_3d[i];
+        EdgeProjection *edge = new EdgeProjection(p3d, K_eigen);
+        edge->setId(index);
+        // put the edges onto vertex zero
+        edge->setVertex(0, vertex_pose);
+        edge->setMeasurement(p2d);
+        edge->setInformation(Eigen::Matrix2d::Identity());
+        optimizer.addEdge(edge);
+        index++;
+    }
+
+    // optimizer.setVerbose(true);
+    optimizer.initializeOptimization();
+    optimizer.optimize(10);
+
+    // cout << "pose optimized =\n"
+    //      << vertex_pose->estimate().matrix() << endl;
+
+    pose = vertex_pose->estimate();
 }
 
 } // namespace vslam
