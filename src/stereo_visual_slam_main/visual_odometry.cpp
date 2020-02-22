@@ -1,7 +1,7 @@
 /// \file
-/// \brief Library for structureless stereo visual odometry
+/// \brief Library for stereo visual odometry
 
-#include <stereo_visual_slam_main/structureless_vo.hpp>
+#include <stereo_visual_slam_main/visual_odometry.hpp>
 #include <stereo_visual_slam_main/library_include.hpp>
 #include <stereo_visual_slam_main/frame.hpp>
 #include <iostream>
@@ -17,14 +17,14 @@
 namespace vslam
 {
 
-StructurelessVO::StructurelessVO(ros::NodeHandle &nh) : my_visual_(nh)
+VO::VO(ros::NodeHandle &nh) : my_visual_(nh)
 {
     detector_ = cv::ORB::create(3000);
     descriptor_ = cv::ORB::create();
     matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
 }
 
-StructurelessVO::StructurelessVO(std::string dataset, ros::NodeHandle &nh) : my_visual_(nh)
+VO::VO(std::string dataset, ros::NodeHandle &nh) : my_visual_(nh)
 {
     dataset_ = dataset;
     detector_ = cv::ORB::create(3000);
@@ -32,7 +32,7 @@ StructurelessVO::StructurelessVO(std::string dataset, ros::NodeHandle &nh) : my_
     matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
 }
 
-int StructurelessVO::read_img(int id, cv::Mat &left_img, cv::Mat &right_img)
+int VO::read_img(int id, cv::Mat &left_img, cv::Mat &right_img)
 {
     // auto create address string
     std::string left_address, right_address, image_name;
@@ -65,7 +65,7 @@ int StructurelessVO::read_img(int id, cv::Mat &left_img, cv::Mat &right_img)
     return 0;
 }
 
-int StructurelessVO::disparity_map(const Frame &frame, cv::Mat &disparity)
+int VO::disparity_map(const Frame &frame, cv::Mat &disparity)
 {
     // parameters tested for the kitti dataset
     // needs modification if use other dataset
@@ -82,7 +82,7 @@ int StructurelessVO::disparity_map(const Frame &frame, cv::Mat &disparity)
     return 0;
 }
 
-bool StructurelessVO::initialization()
+bool VO::initialization()
 {
     // sequence starts from 1
     read_img(seq_ - 1, frame_last_.left_img_, frame_last_.right_img_);
@@ -117,7 +117,7 @@ bool StructurelessVO::initialization()
     return check;
 }
 
-bool StructurelessVO::tracking()
+bool VO::tracking()
 {
     read_img(seq_, frame_current_.left_img_, frame_current_.right_img_);
     frame_current_.id_ = seq_;
@@ -148,7 +148,7 @@ bool StructurelessVO::tracking()
     return check;
 }
 
-int StructurelessVO::feature_detection(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors)
+int VO::feature_detection(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors)
 {
     // ensure the image is read
     if (!img.data)
@@ -174,7 +174,7 @@ int StructurelessVO::feature_detection(const cv::Mat &img, std::vector<cv::KeyPo
     return 0;
 }
 
-void StructurelessVO::adaptive_non_maximal_suppresion(std::vector<cv::KeyPoint> &keypoints,
+void VO::adaptive_non_maximal_suppresion(std::vector<cv::KeyPoint> &keypoints,
                                                       const int num)
 {
     // if number of keypoints is already lower than the threshold, return
@@ -237,7 +237,7 @@ void StructurelessVO::adaptive_non_maximal_suppresion(std::vector<cv::KeyPoint> 
     keypoints.swap(ANMSpt);
 }
 
-int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptors_2, std::vector<cv::DMatch> &feature_matches)
+int VO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptors_2, std::vector<cv::DMatch> &feature_matches)
 {
     feature_matches_.clear();
 
@@ -270,7 +270,7 @@ int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Ma
     return 0;
 }
 
-void StructurelessVO::feature_visualize()
+void VO::feature_visualize()
 {
     // show matched images
     cv::Mat img;
@@ -280,7 +280,7 @@ void StructurelessVO::feature_visualize()
     cv::waitKey(1);
 }
 
-int StructurelessVO::set_ref_3d_position()
+int VO::set_ref_3d_position()
 {
     // clear existing 3D positions
     pts_3d_last_.clear();
@@ -306,7 +306,7 @@ int StructurelessVO::set_ref_3d_position()
     keypoints_last_ = keypoints_last_filtered;
 }
 
-void StructurelessVO::motion_estimation()
+void VO::motion_estimation()
 {
     // 3D positions from the last frame
     // 2D pixels in current frame
@@ -361,7 +361,7 @@ void StructurelessVO::motion_estimation()
     single_frame_optimization(g2o_pts3d, g2o_pts2d, K, T_c_l_);
 }
 
-bool StructurelessVO::check_motion_estimation()
+bool VO::check_motion_estimation()
 {
     // check the number of inliers
     if (num_inliers_ < 10)
@@ -393,7 +393,7 @@ bool StructurelessVO::check_motion_estimation()
     return true;
 }
 
-void StructurelessVO::VOpipeline(int ite_num)
+void VO::VOpipeline(int ite_num)
 {
 
     for (size_t ite = 0; ite < ite_num; ite++)
@@ -453,14 +453,14 @@ void StructurelessVO::VOpipeline(int ite_num)
     }
 }
 
-void StructurelessVO::move_frame()
+void VO::move_frame()
 {
     frame_last_ = frame_current_;
     keypoints_last_ = keypoints_curr_;
     descriptors_last_ = descriptors_curr_;
 }
 
-void StructurelessVO::write_pose()
+void VO::write_pose()
 {
     SE3 T_w_c;
     T_w_c = T_c_w_.inverse();
@@ -490,7 +490,7 @@ void StructurelessVO::write_pose()
     file.close();
 }
 
-void StructurelessVO::rviz_visualize()
+void VO::rviz_visualize()
 {
     // currently using opencv to show the image
     cv::Mat outimg;
@@ -506,7 +506,7 @@ void StructurelessVO::rviz_visualize()
     ros::spinOnce();
 }
 
-void StructurelessVO::single_frame_optimization(const G2OVector3d &points_3d, const G2OVector2d &points_2d,
+void VO::single_frame_optimization(const G2OVector3d &points_3d, const G2OVector2d &points_2d,
                                                 const cv::Mat &K, Sophus::SE3d &pose)
 {
     typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> BlockSolverType;

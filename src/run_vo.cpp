@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <iostream>
-#include "stereo_visual_slam_main/structureless_vo.hpp"
+#include "stereo_visual_slam_main/visual_odometry.hpp"
 
 int main(int argc, char **argv)
 {
@@ -20,7 +20,7 @@ int main(int argc, char **argv)
     std::string dataset;
     nh.getParam("/dataset", dataset);
 
-    vslam::StructurelessVO myVO(dataset, nh);
+    vslam::VO myVO(dataset, nh);
     myVO.VOpipeline(1100);
 
     ros::spin();

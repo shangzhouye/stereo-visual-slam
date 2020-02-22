@@ -1,7 +1,7 @@
-#ifndef STRUCTURELESSVO_INCLUDE_GUARD_HPP
-#define STRUCTURELESSVO_INCLUDE_GUARD_HPP
+#ifndef VO_INCLUDE_GUARD_HPP
+#define VO_INCLUDE_GUARD_HPP
 /// \file
-/// \brief Library for structureless stereo visual odometry
+/// \brief Library for stereo visual odometry
 
 #include <cmath>
 #include <iostream>
@@ -23,7 +23,7 @@ enum TrackState
     Lost
 };
 
-class StructurelessVO
+class VO
 {
 
 public:
@@ -56,14 +56,14 @@ public:
     VslamVisual my_visual_;
 
 public:
-    StructurelessVO(ros::NodeHandle &nh);
+    VO(ros::NodeHandle &nh);
 
-    /*! \brief initialize StructurelessVO
+    /*! \brief initialize VO
     *
     *  \param dataset - the address of the dataset
     *  \param nh - the node handle
     */
-    StructurelessVO(std::string dataset, ros::NodeHandle &nh);
+    VO(std::string dataset, ros::NodeHandle &nh);
 
     /*! \brief read left and right images into a frame
     *
@@ -153,7 +153,7 @@ public:
     */
     bool check_motion_estimation();
 
-    /*! \brief pipeline of the structurelessVO
+    /*! \brief pipeline of the VO
     *
     *  \param ite_num - number of iterations
     */
