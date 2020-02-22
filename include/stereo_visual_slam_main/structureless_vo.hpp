@@ -10,9 +10,6 @@
 #include <vector>
 #include <string>
 #include <unistd.h>
-#include <image_transport/image_transport.h>
-#include <cv_bridge/cv_bridge.h>
-#include <sensor_msgs/image_encodings.h>
 #include <stereo_visual_slam_main/visualization.hpp>
 #include <stereo_visual_slam_main/optimization.hpp>
 
@@ -55,11 +52,6 @@ public:
     TrackState state_ = Init; // current tracking state
     int seq_ = 1;             // sequence number
     int num_lost_ = 0;        // number of continuous lost frames
-
-    // for publishing images
-    image_transport::ImageTransport it_;
-    image_transport::Publisher image_pub_;
-
     // visualization module
     VslamVisual my_visual_;
 

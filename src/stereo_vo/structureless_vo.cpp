@@ -11,33 +11,25 @@
 #include <cmath>
 #include <fstream>
 #include "ros/ros.h"
-#include <image_transport/image_transport.h>
-#include <cv_bridge/cv_bridge.h>
-#include <sensor_msgs/image_encodings.h>
-#include <sensor_msgs/Image.h>
 #include <stereo_visual_slam_main/visualization.hpp>
 #include <stereo_visual_slam_main/optimization.hpp>
 
 namespace vslam
 {
 
-StructurelessVO::StructurelessVO(ros::NodeHandle &nh) : it_(nh), my_visual_(nh)
+StructurelessVO::StructurelessVO(ros::NodeHandle &nh) : my_visual_(nh)
 {
     detector_ = cv::ORB::create(3000);
     descriptor_ = cv::ORB::create();
     matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
-
-    image_transport::Publisher image_pub_ = it_.advertise("vslam/feature_image", 1);
 }
 
-StructurelessVO::StructurelessVO(std::string dataset, ros::NodeHandle &nh) : it_(nh), my_visual_(nh)
+StructurelessVO::StructurelessVO(std::string dataset, ros::NodeHandle &nh) : my_visual_(nh)
 {
     dataset_ = dataset;
     detector_ = cv::ORB::create(3000);
     descriptor_ = cv::ORB::create();
     matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
-
-    image_transport::Publisher image_pub_ = it_.advertise("vslam/feature_image", 1);
 }
 
 int StructurelessVO::read_img(int id, cv::Mat &left_img, cv::Mat &right_img)
@@ -506,14 +498,6 @@ void StructurelessVO::rviz_visualize()
     cv::imshow("ORB features", outimg);
     cv::waitKey(1);
 
-    // std_msgs::Header header;
-    // header.stamp = ros::Time::now();
-    // header.seq = frame_last_.id_;
-    // header.frame_id = "/map";
-    // sensor_msgs::ImagePtr rendered_image_msg = cv_bridge::CvImage(header, "bgr8", outimg).toImageMsg();
-    // image_pub_.publish(rendered_image_msg);
-    // ros::spinOnce();
-
     // publish feature map
     my_visual_.publish_feature_map(pts_3d_last_);
 
@@ -568,7 +552,7 @@ void StructurelessVO::single_frame_optimization(const G2OVector3d &points_3d, co
     optimizer.initializeOptimization();
     optimizer.optimize(10);
 
-    // cout << "pose optimized =\n" << vertex_pose->estimate().matrix() << endl;
+    // cout << "Pose optimized = " << vertex_pose->estimate().matrix() << endl;
 
     pose = vertex_pose->estimate();
 }

@@ -11,8 +11,6 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   message_generation
   sensor_msgs
-  cv_bridge
-  image_transport
   tf
 )
 
@@ -109,7 +107,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES stereo_visual_slam_main
-  CATKIN_DEPENDS roscpp message_runtime sensor_msgs cv_bridge image_transport tf
+  CATKIN_DEPENDS roscpp message_runtime sensor_msgs tf
 #  DEPENDS system_lib
 )
 
