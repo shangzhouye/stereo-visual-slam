@@ -13,18 +13,15 @@
 #include <iostream>
 #include "stereo_visual_slam_main/structureless_vo.hpp"
 
-using namespace std;
-using namespace Eigen;
-
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "run_vo");
     ros::NodeHandle nh;
-    string dataset;
+    std::string dataset;
     nh.getParam("/dataset", dataset);
 
     vslam::StructurelessVO myVO(dataset, nh);
-    myVO.VOpipeline(4540);
+    myVO.VOpipeline(1100);
 
     ros::spin();
 

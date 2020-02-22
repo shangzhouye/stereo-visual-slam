@@ -7,9 +7,6 @@
 #include <iostream>
 #include <stereo_visual_slam_main/library_include.hpp>
 
-using namespace std;
-using namespace Eigen;
-
 namespace vslam
 {
 
@@ -34,10 +31,10 @@ public:
     // functions
     Frame() = default;
 
-    Frame(int id, double timestamp, const Mat &left, const Mat &right)
+    Frame(int id, double timestamp, const cv::Mat &left, const cv::Mat &right)
         : id_(id), time_stamp_(timestamp), left_img_(left), right_img_(right) {}
 
-    Vector3d find_3d(const cv::KeyPoint &kp);
+    Eigen::Vector3d find_3d(const cv::KeyPoint &kp);
 };
 
 } // namespace vslam

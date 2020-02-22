@@ -18,9 +18,6 @@
 #include <stereo_visual_slam_main/visualization.hpp>
 #include <stereo_visual_slam_main/optimization.hpp>
 
-using namespace std;
-using namespace Eigen;
-
 namespace vslam
 {
 
@@ -33,7 +30,7 @@ StructurelessVO::StructurelessVO(ros::NodeHandle &nh) : it_(nh), my_visual_(nh)
     image_transport::Publisher image_pub_ = it_.advertise("vslam/feature_image", 1);
 }
 
-StructurelessVO::StructurelessVO(string dataset, ros::NodeHandle &nh) : it_(nh), my_visual_(nh)
+StructurelessVO::StructurelessVO(std::string dataset, ros::NodeHandle &nh) : it_(nh), my_visual_(nh)
 {
     dataset_ = dataset;
     detector_ = cv::ORB::create(3000);
@@ -46,10 +43,10 @@ StructurelessVO::StructurelessVO(string dataset, ros::NodeHandle &nh) : it_(nh),
 int StructurelessVO::read_img(int id, cv::Mat &left_img, cv::Mat &right_img)
 {
     // auto create address string
-    string left_address, right_address, image_name;
+    std::string left_address, right_address, image_name;
 
-    image_name = to_string(id);
-    image_name = string(6 - image_name.length(), '0') + image_name;
+    image_name = std::to_string(id);
+    image_name = std::string(6 - image_name.length(), '0') + image_name;
 
     left_address = this->dataset_ + "image_0/" + image_name + ".png";
     right_address = this->dataset_ + "image_1/" + image_name + ".png";
@@ -61,7 +58,7 @@ int StructurelessVO::read_img(int id, cv::Mat &left_img, cv::Mat &right_img)
 
     if (!left_img.data)
     {
-        cout << "Could not open or find the image" << std::endl;
+        std::cout << "Could not open or find the image" << std::endl;
         return -1;
     }
 
@@ -159,12 +156,12 @@ bool StructurelessVO::tracking()
     return check;
 }
 
-int StructurelessVO::feature_detection(const cv::Mat &img, vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors)
+int StructurelessVO::feature_detection(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors)
 {
     // ensure the image is read
     if (!img.data)
     {
-        cout << "Could not open or find the image" << std::endl;
+        std::cout << "Could not open or find the image" << std::endl;
         return -1;
     }
 
@@ -248,11 +245,11 @@ void StructurelessVO::adaptive_non_maximal_suppresion(std::vector<cv::KeyPoint> 
     keypoints.swap(ANMSpt);
 }
 
-int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptors_2, vector<cv::DMatch> &feature_matches)
+int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptors_2, std::vector<cv::DMatch> &feature_matches)
 {
     feature_matches_.clear();
 
-    vector<cv::DMatch> matches_crosscheck;
+    std::vector<cv::DMatch> matches_crosscheck;
     // use cross check for matching
     matcher_crosscheck_->match(descriptors_1, descriptors_2, matches_crosscheck);
     // cout << "Number of matches after cross check: " << matches_crosscheck.size() << endl;
@@ -270,7 +267,7 @@ int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Ma
     // threshold: distance should be smaller than two times of min distance or a give threshold
     for (int i = 0; i < matches_crosscheck.size(); i++)
     {
-        if (matches_crosscheck[i].distance <= max(2.0 * min_element->distance, 30.0))
+        if (matches_crosscheck[i].distance <= std::max(2.0 * min_element->distance, 30.0))
         {
             feature_matches.push_back(matches_crosscheck[i]);
         }
@@ -284,7 +281,7 @@ int StructurelessVO::feature_matching(const cv::Mat &descriptors_1, const cv::Ma
 void StructurelessVO::feature_visualize()
 {
     // show matched images
-    Mat img;
+    cv::Mat img;
     cv::drawMatches(frame_last_.left_img_, keypoints_last_, frame_current_.left_img_, keypoints_curr_,
                     feature_matches_, img);
     cv::imshow("feature matches", img);
@@ -298,11 +295,11 @@ int StructurelessVO::set_ref_3d_position()
 
     // create filetered descriptors for replacement
     cv::Mat descriptors_last_filtered;
-    vector<cv::KeyPoint> keypoints_last_filtered;
+    std::vector<cv::KeyPoint> keypoints_last_filtered;
 
     for (size_t i = 0; i < keypoints_last_.size(); i++)
     {
-        Vector3d pos_3d = frame_last_.find_3d(keypoints_last_.at(i));
+        Eigen::Vector3d pos_3d = frame_last_.find_3d(keypoints_last_.at(i));
         // filer out points with no depth information (disparity value = -1)
         if (pos_3d(2) > 10 && pos_3d(2) < 400)
         {
@@ -321,8 +318,8 @@ void StructurelessVO::motion_estimation()
 {
     // 3D positions from the last frame
     // 2D pixels in current frame
-    vector<cv::Point3f> pts3d;
-    vector<cv::Point2f> pts2d;
+    std::vector<cv::Point3f> pts3d;
+    std::vector<cv::Point2f> pts2d;
 
     for (cv::DMatch m : feature_matches_)
     {
@@ -330,27 +327,27 @@ void StructurelessVO::motion_estimation()
         pts2d.push_back(keypoints_curr_[m.trainIdx].pt);
     }
 
-    Mat K = (cv::Mat_<double>(3, 3) << frame_last_.fx_, 0, frame_last_.cx_,
+    cv::Mat K = (cv::Mat_<double>(3, 3) << frame_last_.fx_, 0, frame_last_.cx_,
              0, frame_last_.fy_, frame_last_.cy_,
              0, 0, 1);
 
-    Mat rvec, tvec, inliers;
-    cv::solvePnPRansac(pts3d, pts2d, K, Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers);
+    cv::Mat rvec, tvec, inliers;
+    cv::solvePnPRansac(pts3d, pts2d, K, cv::Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers);
 
     num_inliers_ = inliers.rows;
     // cout << "Number of PnP inliers: " << num_inliers_ << endl;
 
     // transfer rvec to matrix
-    Mat SO3_R_cv;
+    cv::Mat SO3_R_cv;
     cv::Rodrigues(rvec, SO3_R_cv);
-    Matrix3d SO3_R;
+    Eigen::Matrix3d SO3_R;
     SO3_R << SO3_R_cv.at<double>(0, 0), SO3_R_cv.at<double>(0, 1), SO3_R_cv.at<double>(0, 2),
         SO3_R_cv.at<double>(1, 0), SO3_R_cv.at<double>(1, 1), SO3_R_cv.at<double>(1, 2),
         SO3_R_cv.at<double>(2, 0), SO3_R_cv.at<double>(2, 1), SO3_R_cv.at<double>(2, 2);
 
     T_c_l_ = SE3(
         SO3_R,
-        Vector3d(tvec.at<double>(0, 0), tvec.at<double>(1, 0), tvec.at<double>(2, 0)));
+        Eigen::Vector3d(tvec.at<double>(0, 0), tvec.at<double>(1, 0), tvec.at<double>(2, 0)));
 
     // cout << "T_c_l Translation x: " << tvec.at<double>(0, 0) << "; y: " << tvec.at<double>(1, 0) << "; z: " << tvec.at<double>(2, 0) << endl;
 
@@ -377,8 +374,8 @@ bool StructurelessVO::check_motion_estimation()
     // check the number of inliers
     if (num_inliers_ < 10)
     {
-        cout << "Frame id: " << frame_last_.id_ << " and " << frame_current_.id_ << endl;
-        cout << "Rejected - inliers not enough: " << num_inliers_ << endl;
+        std::cout << "Frame id: " << frame_last_.id_ << " and " << frame_current_.id_ << std::endl;
+        std::cout << "Rejected - inliers not enough: " << num_inliers_ << std::endl;
         return false;
     }
 
@@ -387,17 +384,17 @@ bool StructurelessVO::check_motion_estimation()
     double frame_gap = frame_current_.id_ - frame_last_.id_; // get the idx gap between last and current frame
     if (displacement.norm() > (5.0 * frame_gap))
     {
-        cout << "Frame id: " << frame_last_.id_ << " and " << frame_current_.id_ << endl;
-        cout << "Rejected - motion is too large: " << displacement.norm() << endl;
+        std::cout << "Frame id: " << frame_last_.id_ << " and " << frame_current_.id_ << std::endl;
+        std::cout << "Rejected - motion is too large: " << displacement.norm() << std::endl;
         return false;
     }
 
     // check if the motion is forward
-    Vector3d translation = T_c_l_.translation();
+    Eigen::Vector3d translation = T_c_l_.translation();
     if (translation(2) > 0.5)
     {
-        cout << "Frame id: " << frame_last_.id_ << " and " << frame_current_.id_ << endl;
-        cout << "Rejected - motion is backward: " << T_c_l_.transZ << endl;
+        std::cout << "Frame id: " << frame_last_.id_ << " and " << frame_current_.id_ << std::endl;
+        std::cout << "Rejected - motion is backward: " << T_c_l_.transZ << std::endl;
         return false;
     }
 
@@ -448,12 +445,12 @@ void StructurelessVO::VOpipeline(int ite_num)
         }
         case Lost:
         {
-            cout << "VO IS LOST" << endl;
+            std::cout << "VO IS LOST" << std::endl;
             return;
             break;
         }
         default:
-            cout << "Invalid state" << endl;
+            std::cout << "Invalid state" << std::endl;
             return;
             break;
         }
@@ -491,20 +488,20 @@ void StructurelessVO::write_pose()
     y = translation(1);
     z = translation(2);
 
-    ofstream file;
-    file.open("estimated_traj.txt", ios_base::app);
+    std::ofstream file;
+    file.open("estimated_traj.txt", std::ios_base::app);
 
     // alows dropping frame
     file << frame_current_.id_ << " " << r00 << " " << r01 << " " << r02 << " " << x << " "
          << r10 << " " << r11 << " " << r12 << " " << y << " "
-         << r20 << " " << r21 << " " << r22 << " " << z << endl;
+         << r20 << " " << r21 << " " << r22 << " " << z << std::endl;
     file.close();
 }
 
 void StructurelessVO::rviz_visualize()
 {
     // currently using opencv to show the image
-    Mat outimg;
+    cv::Mat outimg;
     cv::drawKeypoints(frame_last_.left_img_, keypoints_last_, outimg);
     cv::imshow("ORB features", outimg);
     cv::waitKey(1);
@@ -571,8 +568,7 @@ void StructurelessVO::single_frame_optimization(const G2OVector3d &points_3d, co
     optimizer.initializeOptimization();
     optimizer.optimize(10);
 
-    // cout << "pose optimized =\n"
-    //      << vertex_pose->estimate().matrix() << endl;
+    // cout << "pose optimized =\n" << vertex_pose->estimate().matrix() << endl;
 
     pose = vertex_pose->estimate();
 }

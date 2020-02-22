@@ -41,14 +41,14 @@ public:
     *  \param feature_map - the variable to store feature map
     *  \return if successful
     */
-    int points_to_feature_map(const vector<cv::Point3f> &point_3d);
+    int points_to_feature_map(const std::vector<cv::Point3f> &point_3d);
 
     /*! \brief Publish the feature map
     *
     *  \param points_3d - points generated in Opencv
     *  \return if successful
     */
-    int publish_feature_map(const vector<cv::Point3f> &point_3d);
+    int publish_feature_map(const std::vector<cv::Point3f> &point_3d);
 
     /*! \brief Publish the transformation
     *

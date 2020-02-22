@@ -17,6 +17,4 @@ typedef Sophus::SO3d SO3;
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
 
-using cv::Mat;
-
 #endif

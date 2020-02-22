@@ -23,8 +23,8 @@ namespace vslam
 {
 
 // define aligned_allocator eigen type for g2o
-typedef vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d>> G2OVector2d;
-typedef vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> G2OVector3d;
+typedef std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d>> G2OVector2d;
+typedef std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> G2OVector3d;
 
 // define the vertex
 // parameter: [dimention of parameters to optimize, data type]
@@ -42,8 +42,8 @@ public:
     virtual void oplusImpl(const double *update) override;
 
     // leave read and write empty
-    virtual bool read(istream &in) override {}
-    virtual bool write(ostream &out) const override {}
+    virtual bool read(std::istream &in) override {}
+    virtual bool write(std::ostream &out) const override {}
 };
 
 // define the edge
@@ -69,9 +69,9 @@ public:
     */
     virtual void linearizeOplus() override;
 
-    virtual bool read(istream &in) override {}
+    virtual bool read(std::istream &in) override {}
 
-    virtual bool write(ostream &out) const override {}
+    virtual bool write(std::ostream &out) const override {}
 
 public:
     Eigen::Vector3d point_3d_;

@@ -19,7 +19,7 @@
 namespace vslam
 {
 
-int VslamVisual::points_to_feature_map(const vector<cv::Point3f> &point_3d)
+int VslamVisual::points_to_feature_map(const std::vector<cv::Point3f> &point_3d)
 {
     if (point_3d.size() == 0)
     {
@@ -69,7 +69,7 @@ int VslamVisual::points_to_feature_map(const vector<cv::Point3f> &point_3d)
     return 0;
 }
 
-int VslamVisual::publish_feature_map(const vector<cv::Point3f> &point_3d)
+int VslamVisual::publish_feature_map(const std::vector<cv::Point3f> &point_3d)
 {
     points_to_feature_map(point_3d);
     feature_map_publisher_.publish(feature_map_);

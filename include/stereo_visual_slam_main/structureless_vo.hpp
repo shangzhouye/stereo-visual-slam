@@ -16,9 +16,6 @@
 #include <stereo_visual_slam_main/visualization.hpp>
 #include <stereo_visual_slam_main/optimization.hpp>
 
-using namespace std;
-using namespace Eigen;
-
 namespace vslam
 {
 
@@ -38,14 +35,14 @@ public:
     Frame frame_last_;
     Frame frame_current_;
 
-    vector<cv::Point3f> pts_3d_last_;
-    vector<cv::KeyPoint> keypoints_last_;
-    vector<cv::KeyPoint> keypoints_curr_;
+    std::vector<cv::Point3f> pts_3d_last_;
+    std::vector<cv::KeyPoint> keypoints_last_;
+    std::vector<cv::KeyPoint> keypoints_curr_;
     cv::Mat descriptors_last_;
     cv::Mat descriptors_curr_;
-    vector<cv::DMatch> feature_matches_;
+    std::vector<cv::DMatch> feature_matches_;
 
-    string dataset_;
+    std::string dataset_;
     cv::Ptr<cv::FeatureDetector> detector_;
     cv::Ptr<cv::DescriptorExtractor> descriptor_;
     cv::Ptr<cv::DescriptorMatcher> matcher_crosscheck_;
@@ -74,7 +71,7 @@ public:
     *  \param dataset - the address of the dataset
     *  \param nh - the node handle
     */
-    StructurelessVO(string dataset, ros::NodeHandle &nh);
+    StructurelessVO(std::string dataset, ros::NodeHandle &nh);
 
     /*! \brief read left and right images into a frame
     *
@@ -131,7 +128,7 @@ public:
     *  \param descriptors - the descriptors detected
     *  \return if_successful
     */
-    int feature_detection(const cv::Mat &img, vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors);
+    int feature_detection(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors);
 
     /*! \brief feature matching
     *
@@ -140,7 +137,7 @@ public:
     *  \param feature_matches - feature matches
     *  \return if successful
     */
-    int feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptors_2, vector<cv::DMatch> &feature_matches);
+    int feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptors_2, std::vector<cv::DMatch> &feature_matches);
 
     /*! \brief set reference 3d positions for the last frame
     *
