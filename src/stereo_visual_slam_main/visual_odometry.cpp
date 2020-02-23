@@ -547,6 +547,8 @@ void VO::single_frame_optimization(const G2OVector3d &points_3d, const G2OVector
         edge->setVertex(0, vertex_pose);
         edge->setMeasurement(p2d);
         edge->setInformation(Eigen::Matrix2d::Identity());
+        // set the robust kernel
+        edge->setRobustKernel(new g2o::RobustKernelHuber);
         optimizer.addEdge(edge);
         index++;
     }
