@@ -164,10 +164,10 @@ add_dependencies(visual_odometry ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 add_library(optimization src/stereo_visual_slam_main/optimization.cpp  src/stereo_visual_slam_main/visualization.cpp src/stereo_visual_slam_main/frame.cpp)
 add_dependencies(optimization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} g2o_core g2o_stuff  frame visualization)
 
-add_executable(${PROJECT_NAME}_run_vo src/run_vo.cpp)
-set_target_properties(${PROJECT_NAME}_run_vo PROPERTIES OUTPUT_NAME run_vo PREFIX "")
-add_dependencies(${PROJECT_NAME}_run_vo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} frame visual_odometry visualization optimization)
-target_link_libraries(${PROJECT_NAME}_run_vo frame visual_odometry ${catkin_LIBRARIES} ${OpenCV_LIBS} ${Sophus_LIBRARIES} optimization  g2o_core g2o_stuff)
+add_executable(${PROJECT_NAME}_frontend src/frontend.cpp)
+set_target_properties(${PROJECT_NAME}_frontend PROPERTIES OUTPUT_NAME frontend PREFIX "")
+add_dependencies(${PROJECT_NAME}_frontend ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} frame visual_odometry visualization optimization)
+target_link_libraries(${PROJECT_NAME}_frontend frame visual_odometry ${catkin_LIBRARIES} ${OpenCV_LIBS} ${Sophus_LIBRARIES} optimization  g2o_core g2o_stuff)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
