@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     nh.getParam("/dataset", dataset);
 
     vslam::VO myVO(dataset, nh);
-    myVO.VOpipeline(1100);
+    myVO.VOpipeline(4540);
 
     ros::spin();
 

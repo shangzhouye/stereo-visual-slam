@@ -43,7 +43,7 @@ int VO::read_img(int id, cv::Mat &left_img, cv::Mat &right_img)
     left_address = this->dataset_ + "image_0/" + image_name + ".png";
     right_address = this->dataset_ + "image_1/" + image_name + ".png";
 
-    // cout << left_address << " " << right_address << endl;
+    // std::cout << left_address << " " << right_address << std::endl;
 
     left_img = cv::imread(left_address, CV_LOAD_IMAGE_GRAYSCALE);
     right_img = cv::imread(right_address, CV_LOAD_IMAGE_GRAYSCALE);
@@ -143,7 +143,10 @@ bool VO::tracking()
     }
     seq_++;
 
-    // cout << "World origin in camera frame: " << T_c_w_.translation() << endl;
+    // std::cout << "World origin in camera frame: " << T_c_w_.translation() << std::endl;
+
+    // wait for user input for debugging
+    // while (std::cin.get() != '\n');
 
     return check;
 }
@@ -244,7 +247,7 @@ int VO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptor
     std::vector<cv::DMatch> matches_crosscheck;
     // use cross check for matching
     matcher_crosscheck_->match(descriptors_1, descriptors_2, matches_crosscheck);
-    // cout << "Number of matches after cross check: " << matches_crosscheck.size() << endl;
+    // std::cout << "Number of matches after cross check: " << matches_crosscheck.size() << std::endl;
 
     // calculate the min/max distance
     auto min_max = minmax_element(matches_crosscheck.begin(), matches_crosscheck.end(), [](const auto &lhs, const auto &rhs) {
@@ -253,8 +256,8 @@ int VO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptor
 
     auto min_element = min_max.first;
     auto max_element = min_max.second;
-    // cout << "Min distance: " << min_element->distance << endl;
-    // cout << "Max distance: " << max_element->distance << endl;
+    // std::cout << "Min distance: " << min_element->distance << std::endl;
+    // std::cout << "Max distance: " << max_element->distance << std::endl;
 
     // threshold: distance should be smaller than two times of min distance or a give threshold
     for (int i = 0; i < matches_crosscheck.size(); i++)
@@ -265,7 +268,7 @@ int VO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptor
         }
     }
 
-    // cout << "Number of matches after threshold: " << feature_matches.size() << endl;
+    // std::cout << "Number of matches after threshold: " << feature_matches.size() << std::endl;
 
     return 0;
 }
@@ -327,7 +330,7 @@ void VO::motion_estimation()
     cv::solvePnPRansac(pts3d, pts2d, K, cv::Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers);
 
     num_inliers_ = inliers.rows;
-    // cout << "Number of PnP inliers: " << num_inliers_ << endl;
+    // std::cout << "Number of PnP inliers: " << num_inliers_ << std::endl;
 
     // transfer rvec to matrix
     cv::Mat SO3_R_cv;
@@ -341,7 +344,7 @@ void VO::motion_estimation()
         SO3_R,
         Eigen::Vector3d(tvec.at<double>(0, 0), tvec.at<double>(1, 0), tvec.at<double>(2, 0)));
 
-    // cout << "T_c_l Translation x: " << tvec.at<double>(0, 0) << "; y: " << tvec.at<double>(1, 0) << "; z: " << tvec.at<double>(2, 0) << endl;
+    // std::cout << "T_c_l Translation x: " << tvec.at<double>(0, 0) << "; y: " << tvec.at<double>(1, 0) << "; z: " << tvec.at<double>(2, 0) << std::endl;
 
     // convert cv point to eigen vector
     // only include inliers
@@ -512,8 +515,8 @@ void VO::single_frame_optimization(const G2OVector3d &points_3d, const G2OVector
     typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> BlockSolverType;
     typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType;
 
-    // Use GaussNewton Method
-    auto solver = new g2o::OptimizationAlgorithmGaussNewton(
+    // Use GaussNewton/Levenberg Method
+    auto solver = new g2o::OptimizationAlgorithmLevenberg(
         g2o::make_unique<BlockSolverType>(g2o::make_unique<LinearSolverType>()));
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm(solver);
@@ -550,9 +553,9 @@ void VO::single_frame_optimization(const G2OVector3d &points_3d, const G2OVector
 
     // optimizer.setVerbose(true);
     optimizer.initializeOptimization();
-    optimizer.optimize(10);
+    optimizer.optimize(5);
 
-    // cout << "Pose optimized = " << vertex_pose->estimate().matrix() << endl;
+    // std::cout << "Pose optimized = " << vertex_pose->estimate().matrix() << std::endl;
 
     pose = vertex_pose->estimate();
 }
