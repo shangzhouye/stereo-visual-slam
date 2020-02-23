@@ -82,75 +82,6 @@ int VO::disparity_map(const Frame &frame, cv::Mat &disparity)
     return 0;
 }
 
-bool VO::initialization()
-{
-    // sequence starts from 1
-    read_img(seq_ - 1, frame_last_.left_img_, frame_last_.right_img_);
-    frame_last_.id_ = seq_ - 1; // write the sequence number to the frame
-
-    read_img(seq_, frame_current_.left_img_, frame_current_.right_img_);
-    frame_current_.id_ = seq_;
-
-    disparity_map(frame_last_, frame_last_.disparity_);
-
-    feature_detection(frame_last_.left_img_, keypoints_last_, descriptors_last_);
-
-    set_ref_3d_position();
-
-    feature_detection(frame_current_.left_img_, keypoints_curr_, descriptors_curr_);
-    feature_matching(descriptors_last_, descriptors_curr_, feature_matches_);
-
-    // feature_visualize();
-
-    motion_estimation();
-
-    bool check = check_motion_estimation();
-    if (check)
-    {
-        T_c_w_ = T_c_l_ * T_c_w_;
-        // write_pose();
-        rviz_visualize();
-        move_frame();
-    }
-    seq_++;
-
-    return check;
-}
-
-bool VO::tracking()
-{
-    read_img(seq_, frame_current_.left_img_, frame_current_.right_img_);
-    frame_current_.id_ = seq_;
-
-    disparity_map(frame_last_, frame_last_.disparity_);
-
-    set_ref_3d_position();
-
-    feature_detection(frame_current_.left_img_, keypoints_curr_, descriptors_curr_);
-    feature_matching(descriptors_last_, descriptors_curr_, feature_matches_);
-
-    // feature_visualize();
-
-    motion_estimation();
-
-    bool check = check_motion_estimation();
-    if (check)
-    {
-        T_c_w_ = T_c_l_ * T_c_w_;
-        // write_pose();
-        rviz_visualize();
-        move_frame();
-    }
-    seq_++;
-
-    // std::cout << "World origin in camera frame: " << T_c_w_.translation() << std::endl;
-
-    // wait for user input for debugging
-    // while (std::cin.get() != '\n');
-
-    return check;
-}
-
 int VO::feature_detection(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors)
 {
     // ensure the image is read
@@ -178,7 +109,7 @@ int VO::feature_detection(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoin
 }
 
 void VO::adaptive_non_maximal_suppresion(std::vector<cv::KeyPoint> &keypoints,
-                                                      const int num)
+                                         const int num)
 {
     // if number of keypoints is already lower than the threshold, return
     if (keypoints.size() < num)
@@ -323,8 +254,8 @@ void VO::motion_estimation()
     }
 
     cv::Mat K = (cv::Mat_<double>(3, 3) << frame_last_.fx_, 0, frame_last_.cx_,
-             0, frame_last_.fy_, frame_last_.cy_,
-             0, 0, 1);
+                 0, frame_last_.fy_, frame_last_.cy_,
+                 0, 0, 1);
 
     cv::Mat rvec, tvec, inliers;
     cv::solvePnPRansac(pts3d, pts2d, K, cv::Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers);
@@ -355,7 +286,7 @@ void VO::motion_estimation()
 
     for (int idx = 0; idx < inliers.rows; idx++)
     {
-        int index = inliers.at<int>(idx,0);
+        int index = inliers.at<int>(idx, 0);
         g2o_pts2d[idx] << pts2d[index].x, pts2d[index].y;
         g2o_pts3d[idx] << pts3d[index].x, pts3d[index].y, pts3d[index].z;
     }
@@ -394,6 +325,181 @@ bool VO::check_motion_estimation()
     }
 
     return true;
+}
+
+void VO::move_frame()
+{
+    frame_last_ = frame_current_;
+    keypoints_last_ = keypoints_curr_;
+    descriptors_last_ = descriptors_curr_;
+}
+
+void VO::write_pose()
+{
+    SE3 T_w_c;
+    T_w_c = T_c_w_.inverse();
+    double r00, r01, r02, r10, r11, r12, r20, r21, r22, x, y, z;
+    Eigen::Matrix3d rotation = T_w_c.rotationMatrix();
+    Eigen::Vector3d translation = T_w_c.translation();
+    r00 = rotation(0, 0);
+    r01 = rotation(0, 1);
+    r02 = rotation(0, 2);
+    r10 = rotation(1, 0);
+    r11 = rotation(1, 1);
+    r12 = rotation(1, 2);
+    r20 = rotation(2, 0);
+    r21 = rotation(2, 1);
+    r22 = rotation(2, 2);
+    x = translation(0);
+    y = translation(1);
+    z = translation(2);
+
+    std::ofstream file;
+    file.open("estimated_traj.txt", std::ios_base::app);
+
+    // alows dropping frame
+    file << frame_current_.id_ << " " << r00 << " " << r01 << " " << r02 << " " << x << " "
+         << r10 << " " << r11 << " " << r12 << " " << y << " "
+         << r20 << " " << r21 << " " << r22 << " " << z << std::endl;
+    file.close();
+}
+
+void VO::rviz_visualize()
+{
+    // currently using opencv to show the image
+    cv::Mat outimg;
+    cv::drawKeypoints(frame_last_.left_img_, keypoints_last_, outimg);
+    cv::imshow("ORB features", outimg);
+    cv::waitKey(1);
+
+    // publish feature map
+    my_visual_.publish_feature_map(pts_3d_last_);
+
+    // publish transform
+    my_visual_.publish_transform(T_c_w_);
+    ros::spinOnce();
+}
+
+void VO::single_frame_optimization(const G2OVector3d &points_3d, const G2OVector2d &points_2d,
+                                   const cv::Mat &K, Sophus::SE3d &pose)
+{
+    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> BlockSolverType;
+    typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType;
+
+    // Use GaussNewton/Levenberg Method
+    auto solver = new g2o::OptimizationAlgorithmLevenberg(
+        g2o::make_unique<BlockSolverType>(g2o::make_unique<LinearSolverType>()));
+    g2o::SparseOptimizer optimizer;
+    optimizer.setAlgorithm(solver);
+    // optimizer.setVerbose(true);
+
+    // vertex
+    VertexPose *vertex_pose = new VertexPose();
+    // there is only one vertex: vertex 0
+    vertex_pose->setId(0);
+    vertex_pose->setEstimate(Sophus::SE3d());
+    optimizer.addVertex(vertex_pose);
+
+    // K
+    Eigen::Matrix3d K_eigen;
+    K_eigen << K.at<double>(0, 0), K.at<double>(0, 1), K.at<double>(0, 2),
+        K.at<double>(1, 0), K.at<double>(1, 1), K.at<double>(1, 2),
+        K.at<double>(2, 0), K.at<double>(2, 1), K.at<double>(2, 2);
+
+    // edges
+    int index = 1;
+    for (size_t i = 0; i < points_2d.size(); ++i)
+    {
+        auto p2d = points_2d[i];
+        auto p3d = points_3d[i];
+        EdgeProjection *edge = new EdgeProjection(p3d, K_eigen);
+        edge->setId(index);
+        // put the edges onto vertex zero
+        edge->setVertex(0, vertex_pose);
+        edge->setMeasurement(p2d);
+        edge->setInformation(Eigen::Matrix2d::Identity());
+        // set the robust kernel
+        edge->setRobustKernel(new g2o::RobustKernelHuber);
+        optimizer.addEdge(edge);
+        index++;
+    }
+
+    // optimizer.setVerbose(true);
+    optimizer.initializeOptimization();
+    optimizer.optimize(5);
+
+    // std::cout << "Pose optimized = " << vertex_pose->estimate().matrix() << std::endl;
+
+    pose = vertex_pose->estimate();
+}
+
+bool VO::initialization()
+{
+    // sequence starts from 1
+    read_img(seq_ - 1, frame_last_.left_img_, frame_last_.right_img_);
+    frame_last_.id_ = seq_ - 1; // write the sequence number to the frame
+
+    read_img(seq_, frame_current_.left_img_, frame_current_.right_img_);
+    frame_current_.id_ = seq_;
+
+    disparity_map(frame_last_, frame_last_.disparity_);
+
+    feature_detection(frame_last_.left_img_, keypoints_last_, descriptors_last_);
+
+    set_ref_3d_position();
+
+    feature_detection(frame_current_.left_img_, keypoints_curr_, descriptors_curr_);
+    feature_matching(descriptors_last_, descriptors_curr_, feature_matches_);
+
+    // feature_visualize();
+
+    motion_estimation();
+
+    bool check = check_motion_estimation();
+    if (check)
+    {
+        T_c_w_ = T_c_l_ * T_c_w_;
+        // write_pose();
+        rviz_visualize();
+        move_frame();
+    }
+    seq_++;
+
+    return check;
+}
+
+bool VO::tracking()
+{
+    read_img(seq_, frame_current_.left_img_, frame_current_.right_img_);
+    frame_current_.id_ = seq_;
+
+    disparity_map(frame_last_, frame_last_.disparity_);
+
+    set_ref_3d_position();
+
+    feature_detection(frame_current_.left_img_, keypoints_curr_, descriptors_curr_);
+    feature_matching(descriptors_last_, descriptors_curr_, feature_matches_);
+
+    // feature_visualize();
+
+    motion_estimation();
+
+    bool check = check_motion_estimation();
+    if (check)
+    {
+        T_c_w_ = T_c_l_ * T_c_w_;
+        // write_pose();
+        rviz_visualize();
+        move_frame();
+    }
+    seq_++;
+
+    // std::cout << "World origin in camera frame: " << T_c_w_.translation() << std::endl;
+
+    // wait for user input for debugging
+    // while (std::cin.get() != '\n');
+
+    return check;
 }
 
 void VO::VOpipeline(int ite_num)
@@ -454,112 +560,6 @@ void VO::VOpipeline(int ite_num)
         // ROS_INFO("Time for this loop is: %f", (time_end - time_start).toSec());
         ros::spinOnce();
     }
-}
-
-void VO::move_frame()
-{
-    frame_last_ = frame_current_;
-    keypoints_last_ = keypoints_curr_;
-    descriptors_last_ = descriptors_curr_;
-}
-
-void VO::write_pose()
-{
-    SE3 T_w_c;
-    T_w_c = T_c_w_.inverse();
-    double r00, r01, r02, r10, r11, r12, r20, r21, r22, x, y, z;
-    Eigen::Matrix3d rotation = T_w_c.rotationMatrix();
-    Eigen::Vector3d translation = T_w_c.translation();
-    r00 = rotation(0, 0);
-    r01 = rotation(0, 1);
-    r02 = rotation(0, 2);
-    r10 = rotation(1, 0);
-    r11 = rotation(1, 1);
-    r12 = rotation(1, 2);
-    r20 = rotation(2, 0);
-    r21 = rotation(2, 1);
-    r22 = rotation(2, 2);
-    x = translation(0);
-    y = translation(1);
-    z = translation(2);
-
-    std::ofstream file;
-    file.open("estimated_traj.txt", std::ios_base::app);
-
-    // alows dropping frame
-    file << frame_current_.id_ << " " << r00 << " " << r01 << " " << r02 << " " << x << " "
-         << r10 << " " << r11 << " " << r12 << " " << y << " "
-         << r20 << " " << r21 << " " << r22 << " " << z << std::endl;
-    file.close();
-}
-
-void VO::rviz_visualize()
-{
-    // currently using opencv to show the image
-    cv::Mat outimg;
-    cv::drawKeypoints(frame_last_.left_img_, keypoints_last_, outimg);
-    cv::imshow("ORB features", outimg);
-    cv::waitKey(1);
-
-    // publish feature map
-    my_visual_.publish_feature_map(pts_3d_last_);
-
-    // publish transform
-    my_visual_.publish_transform(T_c_w_);
-    ros::spinOnce();
-}
-
-void VO::single_frame_optimization(const G2OVector3d &points_3d, const G2OVector2d &points_2d,
-                                                const cv::Mat &K, Sophus::SE3d &pose)
-{
-    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> BlockSolverType;
-    typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType;
-
-    // Use GaussNewton/Levenberg Method
-    auto solver = new g2o::OptimizationAlgorithmLevenberg(
-        g2o::make_unique<BlockSolverType>(g2o::make_unique<LinearSolverType>()));
-    g2o::SparseOptimizer optimizer;
-    optimizer.setAlgorithm(solver);
-    // optimizer.setVerbose(true);
-
-    // vertex
-    VertexPose *vertex_pose = new VertexPose();
-    // there is only one vertex: vertex 0
-    vertex_pose->setId(0);
-    vertex_pose->setEstimate(Sophus::SE3d());
-    optimizer.addVertex(vertex_pose);
-
-    // K
-    Eigen::Matrix3d K_eigen;
-    K_eigen << K.at<double>(0, 0), K.at<double>(0, 1), K.at<double>(0, 2),
-        K.at<double>(1, 0), K.at<double>(1, 1), K.at<double>(1, 2),
-        K.at<double>(2, 0), K.at<double>(2, 1), K.at<double>(2, 2);
-
-    // edges
-    int index = 1;
-    for (size_t i = 0; i < points_2d.size(); ++i)
-    {
-        auto p2d = points_2d[i];
-        auto p3d = points_3d[i];
-        EdgeProjection *edge = new EdgeProjection(p3d, K_eigen);
-        edge->setId(index);
-        // put the edges onto vertex zero
-        edge->setVertex(0, vertex_pose);
-        edge->setMeasurement(p2d);
-        edge->setInformation(Eigen::Matrix2d::Identity());
-        // set the robust kernel
-        edge->setRobustKernel(new g2o::RobustKernelHuber);
-        optimizer.addEdge(edge);
-        index++;
-    }
-
-    // optimizer.setVerbose(true);
-    optimizer.initializeOptimization();
-    optimizer.optimize(5);
-
-    // std::cout << "Pose optimized = " << vertex_pose->estimate().matrix() << std::endl;
-
-    pose = vertex_pose->estimate();
 }
 
 } // namespace vslam

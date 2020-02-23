@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <stereo_visual_slam_main/visualization.hpp>
 #include <stereo_visual_slam_main/optimization.hpp>
+#include <stereo_visual_slam_main/map.hpp>
 
 namespace vslam
 {
@@ -52,8 +53,11 @@ public:
     TrackState state_ = Init; // current tracking state
     int seq_ = 1;             // sequence number
     int num_lost_ = 0;        // number of continuous lost frames
+    
     // visualization module
     VslamVisual my_visual_;
+
+    Map map_;
 
 public:
     VO(ros::NodeHandle &nh);

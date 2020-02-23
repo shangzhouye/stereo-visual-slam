@@ -22,6 +22,9 @@ public:
     double time_stamp_;
     cv::Mat left_img_, right_img_;
     cv::Mat disparity_;
+    
+    SE3 T_c_w_ = SE3(); // T_current(camera)_world
+    bool is_keyframe;
 
     // camera intrinsic parameters
     double fx_ = 718.856, fy_ = 718.856, cx_ = 607.1928, cy_ = 185.2157;

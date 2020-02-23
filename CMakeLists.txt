@@ -155,6 +155,12 @@ include_directories(${G2O_INCLUDE_DIRS})
 add_library(frame src/stereo_visual_slam_main/frame.cpp)
 add_dependencies(frame ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_library(landmark src/stereo_visual_slam_main/landmark.cpp src/stereo_visual_slam_main/frame.cpp)
+add_dependencies(landmark ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_library(map src/stereo_visual_slam_main/map.cpp src/stereo_visual_slam_main/landmark.cpp src/stereo_visual_slam_main/frame.cpp)
+add_dependencies(map ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 add_library(visualization src/stereo_visual_slam_main/visualization.cpp)
 add_dependencies(visualization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
