@@ -6,7 +6,7 @@
 
     <rosparam command="load" file="$(find stereo_visual_slam_main)/config/kitti_param.yaml" />
 
-    <node name="frontend" pkg="stereo_visual_slam_main" type="frontend" output="screen"/>
+    <node name="run_vslam" pkg="stereo_visual_slam_main" type="run_vslam" output="screen"/>
 
     <group if="$(eval arg('use_rviz') == true)">
         <node name="rviz" pkg="rviz" type="rviz" args="-d $(find stereo_visual_slam_main)/config/kitti_config.rviz"/>

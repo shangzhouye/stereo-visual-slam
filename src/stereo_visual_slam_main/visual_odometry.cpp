@@ -100,10 +100,10 @@ int VO::feature_detection(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoin
     descriptor_->compute(img, keypoints, descriptors);
 
     // show output image
-    // Mat outimg1;
+    // cv::Mat outimg1;
     // cv::drawKeypoints(img, keypoints, outimg1);
     // cv::imshow("ORB features", outimg1);
-    // cv::waitKey(0);
+    // cv::waitKey(1);
 
     return 0;
 }
@@ -324,6 +324,16 @@ bool VO::check_motion_estimation()
         return false;
     }
 
+    // try to drop too close frames
+    // Eigen::Vector3d trans = displacement.head<3>();
+    // Eigen::Vector3d rot = displacement.tail<3>();
+    // if (rot.norm() < 0.05 && trans.norm() < 3.0)
+    // {
+    //     std::cout << "Frame id: " << frame_last_.id_ << " and " << frame_current_.id_ << std::endl;
+    //     std::cout << "Dropped - motion is too small: " << displacement.norm() << std::endl;
+    //     return false;
+    // }
+
     return true;
 }
 
@@ -436,8 +446,8 @@ void VO::single_frame_optimization(const G2OVector3d &points_3d, const G2OVector
 bool VO::initialization()
 {
     // sequence starts from 1
-    read_img(seq_ - 1, frame_last_.left_img_, frame_last_.right_img_);
-    frame_last_.id_ = seq_ - 1; // write the sequence number to the frame
+    read_img(0, frame_last_.left_img_, frame_last_.right_img_);
+    frame_last_.id_ = 0; // write the sequence number to the frame
 
     read_img(seq_, frame_current_.left_img_, frame_current_.right_img_);
     frame_current_.id_ = seq_;
