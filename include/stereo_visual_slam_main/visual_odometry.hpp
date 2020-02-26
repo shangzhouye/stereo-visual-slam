@@ -6,7 +6,7 @@
 #include <cmath>
 #include <iostream>
 #include <stereo_visual_slam_main/library_include.hpp>
-#include <stereo_visual_slam_main/frame.hpp>
+#include <stereo_visual_slam_main/types_def.hpp>
 #include <vector>
 #include <string>
 #include <unistd.h>
@@ -34,10 +34,12 @@ public:
     Frame frame_current_;
 
     std::vector<cv::Point3f> pts_3d_last_;
+
     std::vector<cv::KeyPoint> keypoints_last_;
     std::vector<cv::KeyPoint> keypoints_curr_;
     cv::Mat descriptors_last_;
     cv::Mat descriptors_curr_;
+
     std::vector<cv::DMatch> feature_matches_;
 
     std::string dataset_;
@@ -50,24 +52,25 @@ public:
     SE3 T_c_l_ = SE3(); // T_current(camera)_last(camera)
     SE3 T_c_w_ = SE3(); // T_current(camera)_world
 
-    TrackState state_ = Init; // current tracking state
-    int seq_ = 1;             // sequence number
-    int num_lost_ = 0;        // number of continuous lost frames
-    
+    int seq_ = 1; // sequence number
+
     // visualization module
     VslamVisual my_visual_;
 
-    Map map_;
+    Map &my_map_;
+
+    TrackState state_ = Init; // current tracking state
+    int num_lost_ = 0;        // number of continuous lost frames
 
 public:
-    VO(ros::NodeHandle &nh);
+    VO(ros::NodeHandle &nh, Map &map);
 
     /*! \brief initialize VO
     *
     *  \param dataset - the address of the dataset
     *  \param nh - the node handle
     */
-    VO(std::string dataset, ros::NodeHandle &nh);
+    VO(std::string dataset, ros::NodeHandle &nh, Map &map);
 
     /*! \brief read left and right images into a frame
     *
@@ -157,12 +160,6 @@ public:
     */
     bool check_motion_estimation();
 
-    /*! \brief pipeline of the VO
-    *
-    *  \param ite_num - number of iterations
-    */
-    void VOpipeline(int ite_num);
-
     /*! \brief move everything from current frame to last frame
     */
     void move_frame();
@@ -185,7 +182,6 @@ public:
     void adaptive_non_maximal_suppresion(std::vector<cv::KeyPoint> &keypoints,
                                          const int num);
 
-    
     /*! \brief single frame nonlinear optimization using g2o after PnP
     *  \param points_3d - 3D landmark points
     *  \param points_2d - 2D corresponding points in the image
@@ -193,7 +189,12 @@ public:
     *  \param pose - the pose to be optimized
     */
     void single_frame_optimization(const G2OVector3d &points_3d, const G2OVector2d &points_2d,
-                             const cv::Mat &K, Sophus::SE3d &pose);
+                                   const cv::Mat &K, Sophus::SE3d &pose);
+
+    /*! \brief pipeline of the tracking thread
+    *
+    */
+    void pipeline();
 };
 
 } // namespace vslam

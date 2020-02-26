@@ -3,7 +3,7 @@
 
 #include <stereo_visual_slam_main/visual_odometry.hpp>
 #include <stereo_visual_slam_main/library_include.hpp>
-#include <stereo_visual_slam_main/frame.hpp>
+#include <stereo_visual_slam_main/types_def.hpp>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -17,14 +17,14 @@
 namespace vslam
 {
 
-VO::VO(ros::NodeHandle &nh) : my_visual_(nh)
+VO::VO(ros::NodeHandle &nh, Map &map) : my_visual_(nh), my_map_(map)
 {
     detector_ = cv::ORB::create(3000);
     descriptor_ = cv::ORB::create();
     matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
 }
 
-VO::VO(std::string dataset, ros::NodeHandle &nh) : my_visual_(nh)
+VO::VO(std::string dataset, ros::NodeHandle &nh, Map &map) : my_visual_(nh), my_map_(map)
 {
     dataset_ = dataset;
     detector_ = cv::ORB::create(3000);
@@ -512,64 +512,61 @@ bool VO::tracking()
     return check;
 }
 
-void VO::VOpipeline(int ite_num)
+void VO::pipeline()
 {
 
-    for (size_t ite = 0; ite < ite_num; ite++)
+    // ros::Time time_start = ros::Time::now();
+
+    switch (state_)
     {
-        // ros::Time time_start = ros::Time::now();
+    case Init:
+    {
 
-        switch (state_)
+        if (initialization())
         {
-        case Init:
+            state_ = Track;
+        }
+        else
         {
-
-            if (initialization())
+            num_lost_++;
+            if (num_lost_ > 10)
             {
-                state_ = Track;
+                state_ = Lost;
             }
-            else
-            {
-                num_lost_++;
-                if (num_lost_ > 10)
-                {
-                    state_ = Lost;
-                }
-            }
-            break;
         }
-        case Track:
-        {
-            if (tracking())
-            {
-                num_lost_ = 0;
-            }
-            else
-            {
-                num_lost_++;
-                if (num_lost_ > 10)
-                {
-                    state_ = Lost;
-                }
-            }
-            break;
-        }
-        case Lost:
-        {
-            std::cout << "VO IS LOST" << std::endl;
-            return;
-            break;
-        }
-        default:
-            std::cout << "Invalid state" << std::endl;
-            return;
-            break;
-        }
-
-        // ros::Time time_end = ros::Time::now();
-        // ROS_INFO("Time for this loop is: %f", (time_end - time_start).toSec());
-        ros::spinOnce();
+        break;
     }
+    case Track:
+    {
+        if (tracking())
+        {
+            num_lost_ = 0;
+        }
+        else
+        {
+            num_lost_++;
+            if (num_lost_ > 10)
+            {
+                state_ = Lost;
+            }
+        }
+        break;
+    }
+    case Lost:
+    {
+        std::cout << "VO IS LOST" << std::endl;
+        return;
+        break;
+    }
+    default:
+        std::cout << "Invalid state" << std::endl;
+        return;
+        break;
+    }
+
+    // ros::Time time_end = ros::Time::now();
+    // ROS_INFO("Time for this loop is: %f", (time_end - time_start).toSec());
+    ros::spinOnce();
 }
 
 } // namespace vslam

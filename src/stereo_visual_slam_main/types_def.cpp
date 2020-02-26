@@ -1,15 +1,10 @@
 /// \file
 /// \brief Definition of frame struct
 
-#include <stereo_visual_slam_main/frame.hpp>
+#include <stereo_visual_slam_main/types_def.hpp>
 
 namespace vslam
 {
-
-// bug narrowed down: when a class needs to be initialized
-// without parameters (Frame new_frame;), the custom default
-// constructor does not work.
-// practice: have a default constructor defined by Frame() = default;
 
 Eigen::Vector3d Frame::find_3d(const cv::KeyPoint &kp)
 {

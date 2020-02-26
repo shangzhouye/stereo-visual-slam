@@ -6,7 +6,7 @@
 #include <cmath>
 #include <iostream>
 #include <stereo_visual_slam_main/library_include.hpp>
-#include <stereo_visual_slam_main/frame.hpp>
+#include <stereo_visual_slam_main/types_def.hpp>
 #include <vector>
 #include <string>
 #include <unistd.h>

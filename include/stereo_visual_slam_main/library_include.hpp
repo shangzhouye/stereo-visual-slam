@@ -1,6 +1,9 @@
 #ifndef LIBRARY_INCLUDE_H
 #define LIBRARY_INCLUDE_H
 
+// ros
+#include "ros/ros.h"
+
 // for eigen
 #include <Eigen/Core>
 #include <Eigen/Geometry>

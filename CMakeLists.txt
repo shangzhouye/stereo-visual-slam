@@ -152,28 +152,25 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_module)
 find_package(G2O REQUIRED)
 include_directories(${G2O_INCLUDE_DIRS})
 
-add_library(frame src/stereo_visual_slam_main/frame.cpp)
-add_dependencies(frame ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_library(types_def src/stereo_visual_slam_main/types_def.cpp)
+add_dependencies(types_def ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_library(landmark src/stereo_visual_slam_main/landmark.cpp src/stereo_visual_slam_main/frame.cpp)
-add_dependencies(landmark ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-add_library(map src/stereo_visual_slam_main/map.cpp src/stereo_visual_slam_main/landmark.cpp src/stereo_visual_slam_main/frame.cpp)
+add_library(map src/stereo_visual_slam_main/map.cpp src/stereo_visual_slam_main/types_def.cpp)
 add_dependencies(map ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_library(visualization src/stereo_visual_slam_main/visualization.cpp)
 add_dependencies(visualization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_library(visual_odometry src/stereo_visual_slam_main/visual_odometry.cpp src/stereo_visual_slam_main/visualization.cpp src/stereo_visual_slam_main/frame.cpp)
-add_dependencies(visual_odometry ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} frame visualization)
+add_library(visual_odometry src/stereo_visual_slam_main/visual_odometry.cpp src/stereo_visual_slam_main/visualization.cpp src/stereo_visual_slam_main/types_def.cpp)
+add_dependencies(visual_odometry ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_library(optimization src/stereo_visual_slam_main/optimization.cpp  src/stereo_visual_slam_main/visualization.cpp src/stereo_visual_slam_main/frame.cpp)
-add_dependencies(optimization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} g2o_core g2o_stuff  frame visualization)
+add_library(optimization src/stereo_visual_slam_main/optimization.cpp  src/stereo_visual_slam_main/visualization.cpp src/stereo_visual_slam_main/types_def.cpp)
+add_dependencies(optimization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(${PROJECT_NAME}_run_vslam src/run_vslam.cpp)
 set_target_properties(${PROJECT_NAME}_run_vslam PROPERTIES OUTPUT_NAME run_vslam PREFIX "")
-add_dependencies(${PROJECT_NAME}_run_vslam ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} frame visual_odometry visualization optimization)
-target_link_libraries(${PROJECT_NAME}_run_vslam frame visual_odometry ${catkin_LIBRARIES} ${OpenCV_LIBS} ${Sophus_LIBRARIES} optimization  g2o_core g2o_stuff)
+add_dependencies(${PROJECT_NAME}_run_vslam ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} frame visual_odometry visualization optimization map landmark)
+target_link_libraries(${PROJECT_NAME}_run_vslam types_def visualization visual_odometry optimization ${catkin_LIBRARIES} ${OpenCV_LIBS} ${Sophus_LIBRARIES} g2o_core g2o_stuff)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

@@ -6,14 +6,10 @@
 #include <cmath>
 #include <iostream>
 #include <stereo_visual_slam_main/library_include.hpp>
-#include <stereo_visual_slam_main/frame.hpp>
+#include <stereo_visual_slam_main/types_def.hpp>
 #include <vector>
 #include <string>
 #include <unistd.h>
-#include <image_transport/image_transport.h>
-#include <cv_bridge/cv_bridge.h>
-#include <sensor_msgs/image_encodings.h>
-#include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
 
 namespace vslam

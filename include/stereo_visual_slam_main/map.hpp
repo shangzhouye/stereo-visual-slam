@@ -6,8 +6,7 @@
 #include <cmath>
 #include <iostream>
 #include <stereo_visual_slam_main/library_include.hpp>
-#include <stereo_visual_slam_main/frame.hpp>
-#include <stereo_visual_slam_main/landmark.hpp>
+#include <stereo_visual_slam_main/types_def.hpp>
 
 namespace vslam
 {
@@ -15,11 +14,17 @@ namespace vslam
 struct Map
 {
 public:
-    std::vector<Frame> keyframes_;
-    std::vector<Landmark> landmarks_;
+    std::unordered_map<unsigned long, Frame> keyframes_;
+    std::unordered_map<unsigned long, Landmark> landmarks_;
+
+    // number of active keyframes
+    const int num_keyframes_ = 7;
+
+    // pointer to current frame
+    Frame *current_frame_;
 
 public:
-    Map() : keyframes_(std::vector<Frame>()), landmarks_(std::vector<Landmark>()) {}
+    Map() : current_frame_(nullptr) {}
 
     /*! \brief inset a keyframe into the map
     *
