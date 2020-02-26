@@ -18,8 +18,8 @@ struct Feature
 {
 public:
     double id_;
-    Frame *frame_;
-    Landmark *landmark_;
+    Frame *frame_ = nullptr;
+    Landmark *landmark_ = nullptr;
     cv::KeyPoint position_; // 2d position in the pixel frame
     cv::Mat descriptor_;    // feature descriptor of this landmark
 
@@ -47,7 +47,7 @@ public:
 
     bool is_keyframe_;
     int keyframe_id_;
-    std::unordered_map<unsigned long, Feature> features_;
+    std::vector<Feature> features_;
 
 
     // camera intrinsic parameters
@@ -62,6 +62,16 @@ public:
         : id_(id), time_stamp_(timestamp), left_img_(left), right_img_(right) {}
 
     Eigen::Vector3d find_3d(const cv::KeyPoint &kp);
+
+    /*! \brief fill in the remaining information needed for the frame
+    *
+    */
+    void fill_frame(SE3 T_c_w, bool is_keyframe, int keyframe_id);
+
+    /*! \brief add features to the frame
+    *
+    */
+    void add_feature(Feature feature);
 };
 
 struct Landmark

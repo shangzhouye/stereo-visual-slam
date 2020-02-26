@@ -22,6 +22,16 @@ int main(int argc, char **argv)
 
     vslam::Map my_map;
     vslam::VO my_VO(dataset, nh, my_map);
+    my_VO.initialization();
+
+    // debug printing
+    // std::cout << my_map.landmarks_.size() << std::endl;
+    // std::cout << my_map.landmarks_[0].pt_3d_ << std::endl;
+    // std::cout << my_map.landmarks_[0].observations_.size() << std::endl;
+    // std::cout << my_map.keyframes_.size() << std::endl;
+    // std::cout << my_map.keyframes_[0].features_.size() << std::endl;
+    // std::cout << my_map.keyframes_[0].features_.at(0).position_.pt << std::endl;
+    
 
     ros::spin();
 

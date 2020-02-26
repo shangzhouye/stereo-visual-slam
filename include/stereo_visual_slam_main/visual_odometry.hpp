@@ -62,6 +62,9 @@ public:
     TrackState state_ = Init; // current tracking state
     int num_lost_ = 0;        // number of continuous lost frames
 
+    int curr_keyframe_id_ = 0;
+    int curr_landmark_id_ = 0;
+
 public:
     VO(ros::NodeHandle &nh, Map &map);
 

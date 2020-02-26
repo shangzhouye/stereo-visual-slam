@@ -10,9 +10,9 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
-#include "ros/ros.h"
 #include <stereo_visual_slam_main/visualization.hpp>
 #include <stereo_visual_slam_main/optimization.hpp>
+#include <stereo_visual_slam_main/map.hpp>
 
 namespace vslam
 {
@@ -449,33 +449,51 @@ bool VO::initialization()
     read_img(0, frame_last_.left_img_, frame_last_.right_img_);
     frame_last_.id_ = 0; // write the sequence number to the frame
 
-    read_img(seq_, frame_current_.left_img_, frame_current_.right_img_);
-    frame_current_.id_ = seq_;
-
     disparity_map(frame_last_, frame_last_.disparity_);
 
     feature_detection(frame_last_.left_img_, keypoints_last_, descriptors_last_);
 
     set_ref_3d_position();
 
-    feature_detection(frame_current_.left_img_, keypoints_curr_, descriptors_curr_);
-    feature_matching(descriptors_last_, descriptors_curr_, feature_matches_);
+    frame_last_.fill_frame(SE3(), true, curr_keyframe_id_);
+    curr_keyframe_id_++;
 
-    // feature_visualize();
+    my_map_.insert_keyframe(frame_last_);
 
-    motion_estimation();
-
-    bool check = check_motion_estimation();
-    if (check)
+    for (size_t i = 0; i < keypoints_last_.size(); i++)
     {
-        T_c_w_ = T_c_l_ * T_c_w_;
-        // write_pose();
-        rviz_visualize();
-        move_frame();
+        // push all the features onto the frame
+        Feature feature_to_add(i, keypoints_last_.at(i), descriptors_last_.row(i));
+        my_map_.keyframes_[frame_last_.keyframe_id_].add_feature(feature_to_add);
+        // create and insert the landmark
+        Landmark landmark_to_add(curr_landmark_id_, pts_3d_last_.at(i), descriptors_last_.row(i));
+        curr_landmark_id_++;
+        my_map_.insert_landmark(landmark_to_add);
+        // build the connection
+        my_map_.keyframes_[frame_last_.keyframe_id_].features_.at(i).frame_ = &my_map_.keyframes_[frame_last_.keyframe_id_];
+        my_map_.keyframes_[frame_last_.keyframe_id_].features_.at(i).landmark_ = &my_map_.landmarks_[landmark_to_add.id_];
+        my_map_.landmarks_[landmark_to_add.id_].observed_times_++;
+        my_map_.landmarks_[landmark_to_add.id_].observations_.push_back(&my_map_.keyframes_[frame_last_.keyframe_id_].features_.at(i));
     }
-    seq_++;
 
-    return check;
+    // feature_detection(frame_current_.left_img_, keypoints_curr_, descriptors_curr_);
+    // feature_matching(descriptors_last_, descriptors_curr_, feature_matches_);
+
+    // // feature_visualize();
+
+    // motion_estimation();
+
+    // bool check = check_motion_estimation();
+    // if (check)
+    // {
+    //     T_c_w_ = T_c_l_ * T_c_w_;
+    //     // write_pose();
+    //     rviz_visualize();
+    //     move_frame();
+    // }
+    // seq_++;
+
+    return true;
 }
 
 bool VO::tracking()

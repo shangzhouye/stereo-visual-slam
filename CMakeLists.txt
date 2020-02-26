@@ -161,7 +161,7 @@ add_dependencies(map ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGE
 add_library(visualization src/stereo_visual_slam_main/visualization.cpp)
 add_dependencies(visualization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_library(visual_odometry src/stereo_visual_slam_main/visual_odometry.cpp src/stereo_visual_slam_main/visualization.cpp src/stereo_visual_slam_main/types_def.cpp)
+add_library(visual_odometry src/stereo_visual_slam_main/visual_odometry.cpp src/stereo_visual_slam_main/visualization.cpp src/stereo_visual_slam_main/types_def.cpp src/stereo_visual_slam_main/map.cpp)
 add_dependencies(visual_odometry ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_library(optimization src/stereo_visual_slam_main/optimization.cpp  src/stereo_visual_slam_main/visualization.cpp src/stereo_visual_slam_main/types_def.cpp)
@@ -170,7 +170,7 @@ add_dependencies(optimization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPOR
 add_executable(${PROJECT_NAME}_run_vslam src/run_vslam.cpp)
 set_target_properties(${PROJECT_NAME}_run_vslam PROPERTIES OUTPUT_NAME run_vslam PREFIX "")
 add_dependencies(${PROJECT_NAME}_run_vslam ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} frame visual_odometry visualization optimization map landmark)
-target_link_libraries(${PROJECT_NAME}_run_vslam types_def visualization visual_odometry optimization ${catkin_LIBRARIES} ${OpenCV_LIBS} ${Sophus_LIBRARIES} g2o_core g2o_stuff)
+target_link_libraries(${PROJECT_NAME}_run_vslam types_def map visualization visual_odometry optimization ${catkin_LIBRARIES} ${OpenCV_LIBS} ${Sophus_LIBRARIES} g2o_core g2o_stuff)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
