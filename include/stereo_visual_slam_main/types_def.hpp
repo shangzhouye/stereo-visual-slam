@@ -19,9 +19,10 @@ struct Feature
 public:
     int feature_id_;
     int frame_id_;
-    int landmark_id;
+    int landmark_id_;
     cv::KeyPoint keypoint_; // 2d position in the pixel frame
     cv::Mat descriptor_;    // feature descriptor of this landmark
+    bool is_inlier = false;
 
 public:
     Feature() {}
@@ -67,6 +68,15 @@ public:
     void fill_frame(SE3 T_c_w, bool is_keyframe, int keyframe_id);
 };
 
+struct Observation
+{
+    int keyframe_id_;
+    int feature_id_;
+
+    Observation(int keyframe_id, int feature_id)
+        : keyframe_id_(keyframe_id), feature_id_(feature_id) {}
+};
+
 struct Landmark
 {
 
@@ -74,14 +84,17 @@ public:
     int landmark_id_;
     cv::Point3f pt_3d_;      // 3d position in the world frame;
     cv::Mat descriptor_;     // feature descriptor of this landmark
-    int observed_times_ = 0; // number of times being observed
-    std::list<Feature *> observations_;
+    int observed_times_ = 1; // number of times being observed
+    std::vector<Observation> observations_;
 
 public:
     Landmark() {}
 
-    Landmark(int landmark_id, cv::Point3f pt_3d, cv::Mat descriptor)
-        : landmark_id_(landmark_id), pt_3d_(pt_3d), descriptor_(descriptor) {}
+    Landmark(int landmark_id, cv::Point3f pt_3d, cv::Mat descriptor, Observation observation)
+        : landmark_id_(landmark_id), pt_3d_(pt_3d), descriptor_(descriptor)
+    {
+        observations_.push_back(observation);
+    }
 };
 
 } // namespace vslam

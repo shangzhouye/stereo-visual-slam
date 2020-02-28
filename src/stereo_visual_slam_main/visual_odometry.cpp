@@ -141,7 +141,7 @@ void VO::adaptive_non_maximal_suppresion(std::vector<cv::KeyPoint> &keypoints,
     });
 
     // find the final radius
-    const double final_radius = rad_i_sorted[num];
+    const double final_radius = rad_i_sorted[num - 1];
     for (int i = 0; i < rad_i.size(); ++i)
     {
         if (rad_i[i] >= final_radius)
@@ -154,9 +154,132 @@ void VO::adaptive_non_maximal_suppresion(std::vector<cv::KeyPoint> &keypoints,
     keypoints.swap(ANMSpt);
 }
 
+int VO::disparity_map(const Frame &frame, cv::Mat &disparity)
+{
+    // parameters tested for the kitti dataset
+    // needs modification if use other dataset
+    cv::Ptr<cv::StereoSGBM> sgbm = cv::StereoSGBM::create(
+        0, 96, 9, 8 * 9 * 9, 32 * 9 * 9, 1, 63, 10, 100, 32);
+
+    cv::Mat disparity_sgbm;
+    sgbm->compute(frame.left_img_, frame.right_img_, disparity_sgbm);
+    disparity_sgbm.convertTo(disparity, CV_32F, 1.0 / 16.0f);
+
+    // cv::imshow("disparity", disparity / 96.0);
+    // cv::waitKey(1);
+
+    return 0;
+}
+
+int VO::set_ref_3d_position(std::vector<cv::Point3f> &pts_3d,
+                            std::vector<cv::KeyPoint> &keypoints,
+                            cv::Mat &descriptors)
+{
+    // clear existing 3D positions
+    pts_3d.clear();
+
+    // create filetered descriptors for replacement
+    cv::Mat descriptors_last_filtered;
+    std::vector<cv::KeyPoint> keypoints_last_filtered;
+
+    for (size_t i = 0; i < keypoints.size(); i++)
+    {
+        Eigen::Vector3d pos_3d = frame_last_.find_3d(keypoints.at(i));
+        // filer out points with no depth information (disparity value = -1)
+        if (pos_3d(2) > 10 && pos_3d(2) < 400)
+        {
+            pts_3d.push_back(cv::Point3f(pos_3d(0), pos_3d(1), pos_3d(2)));
+            descriptors_last_filtered.push_back(descriptors.row(i));
+            keypoints_last_filtered.push_back(keypoints.at(i));
+        }
+    }
+
+    // copy the filtered descriptors;
+    descriptors = descriptors_last_filtered;
+    keypoints = keypoints_last_filtered;
+}
+
+int VO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptors_2, std::vector<cv::DMatch> &feature_matches)
+{
+    feature_matches.clear();
+
+    std::vector<cv::DMatch> matches_crosscheck;
+    // use cross check for matching
+    matcher_crosscheck_->match(descriptors_1, descriptors_2, matches_crosscheck);
+    // std::cout << "Number of matches after cross check: " << matches_crosscheck.size() << std::endl;
+
+    // calculate the min/max distance
+    auto min_max = minmax_element(matches_crosscheck.begin(), matches_crosscheck.end(), [](const auto &lhs, const auto &rhs) {
+        return lhs.distance < rhs.distance;
+    });
+
+    auto min_element = min_max.first;
+    auto max_element = min_max.second;
+    // std::cout << "Min distance: " << min_element->distance << std::endl;
+    // std::cout << "Max distance: " << max_element->distance << std::endl;
+
+    // threshold: distance should be smaller than two times of min distance or a give threshold
+    for (int i = 0; i < matches_crosscheck.size(); i++)
+    {
+        if (matches_crosscheck[i].distance <= std::max(2.0 * min_element->distance, 30.0))
+        {
+            feature_matches.push_back(matches_crosscheck[i]);
+        }
+    }
+
+    // std::cout << "Number of matches after threshold: " << feature_matches.size() << std::endl;
+
+    return 0;
+}
+
+void VO::motion_estimation(Frame &frame)
+{
+    // 3D positions from the last frame
+    // 2D pixels in current frame
+    std::vector<cv::Point3f> pts3d;
+    std::vector<cv::Point2f> pts2d;
+
+    for (int i = 0; i < frame.features_.size(); i++)
+    {
+        int landmark_id = frame.features_.at(i).landmark_id_;
+        pts3d.push_back(my_map_.landmarks_[landmark_id].pt_3d_);
+        pts2d.push_back(frame.features_.at(i).keypoint_.pt);
+    }
+
+    cv::Mat K = (cv::Mat_<double>(3, 3) << frame.fx_, 0, frame.cx_,
+                 0, frame.fy_, frame.cy_,
+                 0, 0, 1);
+
+    cv::Mat rvec, tvec, inliers;
+    cv::solvePnPRansac(pts3d, pts2d, K, cv::Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers);
+
+    num_inliers_ = inliers.rows;
+    // std::cout << "Number of PnP inliers: " << num_inliers_ << std::endl;
+
+    // transfer rvec to matrix
+    cv::Mat SO3_R_cv;
+    cv::Rodrigues(rvec, SO3_R_cv);
+    Eigen::Matrix3d SO3_R;
+    SO3_R << SO3_R_cv.at<double>(0, 0), SO3_R_cv.at<double>(0, 1), SO3_R_cv.at<double>(0, 2),
+        SO3_R_cv.at<double>(1, 0), SO3_R_cv.at<double>(1, 1), SO3_R_cv.at<double>(1, 2),
+        SO3_R_cv.at<double>(2, 0), SO3_R_cv.at<double>(2, 1), SO3_R_cv.at<double>(2, 2);
+
+    T_c_l_ = SE3(
+        SO3_R,
+        Eigen::Vector3d(tvec.at<double>(0, 0), tvec.at<double>(1, 0), tvec.at<double>(2, 0)));
+
+    // mark inlieres
+    for (int idx = 0; idx < inliers.rows; idx++)
+    {
+        int index = inliers.at<int>(idx, 0);
+        frame.features_.at(index).is_inlier = true;
+    }
+
+    // std::cout << "T_c_l Translation x: " << tvec.at<double>(0, 0) << "; y: " << tvec.at<double>(1, 0) << "; z: " << tvec.at<double>(2, 0) << std::endl;
+}
+
 bool VO::initialization()
 {
-    // sequence starts from 1
     frame_last_ = Frame();
 
     read_img(0, frame_last_.left_img_, frame_last_.right_img_);
@@ -165,51 +288,114 @@ bool VO::initialization()
     // detect features in the left image
     std::vector<cv::KeyPoint> keypoints_detected;
     cv::Mat descriptors_detected;
+    std::vector<cv::Point3f> pts_3d;
+
     feature_detection(frame_last_.left_img_, keypoints_detected, descriptors_detected);
 
-    // put the features into the frame with feature_id, frame_id, keypoint, descriptor
+    disparity_map(frame_last_, frame_last_.disparity_);
+
+    set_ref_3d_position(pts_3d, keypoints_detected, descriptors_detected);
+
     for (int i = 0; i < keypoints_detected.size(); ++i)
     {
+        // put the features into the frame with feature_id, frame_id, keypoint, descriptor
+        // build the connection from feature to frame
         Feature feature_to_add(i, 0, keypoints_detected.at(i), descriptors_detected.row(i));
+        // build the connection from feature to landmark
+        feature_to_add.landmark_id_ = curr_landmark_id_;
         frame_last_.features_.push_back(feature_to_add);
+        // create a landmark
+        // build the connection from landmark to feature
+        // this 0 is also the keyframe id
+        Observation observation(0, i);
+        Landmark landmark_to_add(curr_landmark_id_, pts_3d.at(i), descriptors_detected.row(i), observation);
+        curr_landmark_id_++;
+        // insert the landmark
+        my_map_.insert_landmark(landmark_to_add);
     }
 
     // debug printing
-    std::cout << "Num of features in keyframe: " << frame_last_.features_.size() << std::endl;
-    std::cout << "Feature 0 - id: " << frame_last_.features_.at(0).feature_id_ << std::endl;
-    std::cout << "Feature 0 - frame: " << frame_last_.features_.at(0).frame_id_ << std::endl;
-    std::cout << "Feature 0 - x position: " << frame_last_.features_.at(0).keypoint_.pt.x << std::endl;
-    std::cout << "Feature 0 - descriptor: " << frame_last_.features_.at(0).descriptor_.size() << std::endl;
+    std::cout << "  Num of features in keyframe: " << frame_last_.features_.size() << std::endl;
+    std::cout << "  Feature 0 - id: " << frame_last_.features_.at(0).feature_id_ << std::endl;
+    std::cout << "  Feature 0 - frame: " << frame_last_.features_.at(0).frame_id_ << std::endl;
+    std::cout << "  Feature 0 - x position: " << frame_last_.features_.at(0).keypoint_.pt.x << std::endl;
+    std::cout << "  Feature 0 - descriptor: " << frame_last_.features_.at(0).descriptor_.size() << std::endl;
+    std::cout << "  Feature 0 - landmark: " << frame_last_.features_.at(0).landmark_id_ << std::endl;
 
+    // fill the extra information
+    frame_last_.fill_frame(SE3(), true, curr_keyframe_id_);
+    curr_keyframe_id_++;
 
-    // disparity_map(frame_last_, frame_last_.disparity_);
+    // insert the keyframe
+    my_map_.insert_keyframe(frame_last_);
 
-    // set_ref_3d_position();
+    return true;
+}
 
-    // // fill the extra information
-    // frame_last_.fill_frame(SE3(), true, curr_keyframe_id_);
-    // curr_keyframe_id_++;
+bool VO::tracking()
+{
+    // clear current frame
+    frame_current_ = Frame();
 
-    // // insert the keyframe
-    // my_map_.insert_keyframe(frame_last_);
+    read_img(seq_, frame_current_.left_img_, frame_current_.right_img_);
+    frame_current_.frame_id_ = seq_;
 
-    // for (size_t i = 0; i < keypoints_last_.size(); i++)
+    // detect features in the current frame
+    std::vector<cv::KeyPoint> keypoints_detected;
+    cv::Mat descriptors_detected;
+    feature_detection(frame_current_.left_img_, keypoints_detected, descriptors_detected);
+
+    std::vector<cv::DMatch> feature_matches;
+
+    cv::Mat descriptors_last;
+    for (int i = 0; i < frame_last_.features_.size(); i++)
+    {
+        descriptors_last.push_back(frame_last_.features_.at(i).descriptor_);
+    }
+    feature_matching(descriptors_last, descriptors_detected, feature_matches);
+
+    for (int i = 0; i < feature_matches.size(); i++)
+    {
+        // put the features into the frame with feature_id, frame_id, keypoint, descriptor
+        // build the connection from feature to frame
+        Feature feature_to_add(i, seq_,
+                               keypoints_detected.at(feature_matches.at(i).trainIdx),
+                               descriptors_detected.row(feature_matches.at(i).trainIdx));
+        // build the connection from feature to landmark
+        feature_to_add.landmark_id_ = frame_last_.features_.at(feature_matches.at(i).queryIdx).landmark_id_;
+        frame_current_.features_.push_back(feature_to_add);
+        // only after selected as keyframe: build the connection from landmark to feature
+    }
+
+    // debug printing
+    std::cout << "  Num of features in keyframe: " << frame_current_.features_.size() << std::endl;
+    std::cout << "  Feature 0 - id: " << frame_current_.features_.at(0).feature_id_ << std::endl;
+    std::cout << "  Feature 0 - frame: " << frame_current_.features_.at(0).frame_id_ << std::endl;
+    std::cout << "  Feature 0 - x position: " << frame_current_.features_.at(0).keypoint_.pt.x << std::endl;
+    std::cout << "  Feature 0 - descriptor: " << frame_current_.features_.at(0).descriptor_.size() << std::endl;
+    std::cout << "  Feature 0 - landmark: " << frame_current_.features_.at(0).landmark_id_ << std::endl;
+
+    motion_estimation(frame_current_);
+
+    // feature_visualize();
+
+    // motion_estimation();
+
+    // bool check = check_motion_estimation();
+    // if (check)
     // {
-    //     // push all the features onto the frame
-    //     Feature feature_to_add(i, keypoints_last_.at(i), descriptors_last_.row(i));
-    //     my_map_.keyframes_[frame_last_.keyframe_id_].add_feature(feature_to_add);
-    //     // create and insert the landmarks
-    //     Landmark landmark_to_add(curr_landmark_id_, pts_3d_last_.at(i), descriptors_last_.row(i));
-    //     curr_landmark_id_++;
-    //     my_map_.insert_landmark(landmark_to_add);
-    //     // build the connection from feature to frame
-    //     my_map_.keyframes_[frame_last_.keyframe_id_].features_.at(i).frame_ = &my_map_.keyframes_[frame_last_.keyframe_id_];
-    //     // build the connection from feature to landmark
-    //     my_map_.keyframes_[frame_last_.keyframe_id_].features_.at(i).landmark_ = &my_map_.landmarks_[landmark_to_add.id_];
-    //     my_map_.landmarks_[landmark_to_add.id_].observed_times_++;
-    //     // build the connection from landmark to feature
-    //     my_map_.landmarks_[landmark_to_add.id_].observations_.push_back(&my_map_.keyframes_[frame_last_.keyframe_id_].features_.at(i));
+    //     T_c_w_ = T_c_l_ * T_c_w_;
+    //     // write_pose();
+    //     rviz_visualize();
+    //     move_frame();
     // }
+
+    seq_++;
+
+    // std::cout << "World origin in camera frame: " << T_c_w_.translation() << std::endl;
+
+    // wait for user input for debugging
+    // while (std::cin.get() != '\n');
 
     return true;
 }

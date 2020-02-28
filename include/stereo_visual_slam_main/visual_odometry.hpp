@@ -41,7 +41,7 @@ public:
     // cv::Mat descriptors_last_;
     // cv::Mat descriptors_curr_;
 
-    std::vector<cv::DMatch> feature_matches_;
+    // std::vector<cv::DMatch> feature_matches_;
 
     std::string dataset_;
     cv::Ptr<cv::FeatureDetector> detector_;
@@ -146,7 +146,7 @@ public:
     * 
     *  \return if successful
     */
-    int set_ref_3d_position();
+    int set_ref_3d_position(std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors);
 
     /*! \brief visualize the feature detection and matching
     */
@@ -154,7 +154,7 @@ public:
 
     /*! \brief estimate the motion using PnP
     */
-    void motion_estimation();
+    void motion_estimation(Frame &frame);
 
     /*! \brief check if the estimated motion is valid
     * 
