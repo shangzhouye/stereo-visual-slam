@@ -25,9 +25,4 @@ void Frame::fill_frame(SE3 T_c_w, bool is_keyframe, int keyframe_id)
     }
 }
 
-void Frame::add_feature(Feature feature)
-{
-    features_.push_back(feature);
-}
-
 } // namespace vslam

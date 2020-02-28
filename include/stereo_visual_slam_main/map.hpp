@@ -20,11 +20,11 @@ public:
     // number of active keyframes
     const int num_keyframes_ = 7;
 
-    // pointer to current frame
-    Frame *current_frame_;
+    // id of the current frame
+    int current_frame_id_ = 0;
 
 public:
-    Map() : current_frame_(nullptr) {}
+    Map() {}
 
     /*! \brief inset a keyframe into the map
     *

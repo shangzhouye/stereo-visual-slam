@@ -32,13 +32,14 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     Frame frame_last_;
     Frame frame_current_;
+    Map &my_map_;
 
-    std::vector<cv::Point3f> pts_3d_last_;
+    // std::vector<cv::Point3f> pts_3d_last_;
 
-    std::vector<cv::KeyPoint> keypoints_last_;
-    std::vector<cv::KeyPoint> keypoints_curr_;
-    cv::Mat descriptors_last_;
-    cv::Mat descriptors_curr_;
+    // std::vector<cv::KeyPoint> keypoints_last_;
+    // std::vector<cv::KeyPoint> keypoints_curr_;
+    // cv::Mat descriptors_last_;
+    // cv::Mat descriptors_curr_;
 
     std::vector<cv::DMatch> feature_matches_;
 
@@ -50,14 +51,12 @@ public:
     int num_inliers_ = 0; // number of inliers after RANSAC
 
     SE3 T_c_l_ = SE3(); // T_current(camera)_last(camera)
-    SE3 T_c_w_ = SE3(); // T_current(camera)_world
+    // SE3 T_c_w_ = SE3(); // T_current(camera)_world
 
     int seq_ = 1; // sequence number
 
     // visualization module
     VslamVisual my_visual_;
-
-    Map &my_map_;
 
     TrackState state_ = Init; // current tracking state
     int num_lost_ = 0;        // number of continuous lost frames

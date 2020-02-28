@@ -25,14 +25,13 @@ int main(int argc, char **argv)
     my_VO.initialization();
 
     // debug printing
-    // std::cout << my_map.landmarks_.size() << std::endl;
-    // std::cout << my_map.landmarks_[0].pt_3d_ << std::endl;
-    // std::cout << my_map.landmarks_[0].observations_.size() << std::endl;
-    // std::cout << my_map.keyframes_.size() << std::endl;
-    // std::cout << my_map.keyframes_[0].features_.size() << std::endl;
-    // std::cout << my_map.keyframes_[0].features_.at(0).position_.pt << std::endl;
+    std::cout << "Num of landmarks: " << my_map.landmarks_.size() << std::endl;
+    std::cout << "Num of keyframes: " << my_map.keyframes_.size() << std::endl;
+    for (int num_keyframe = 0; num_keyframe < my_map.keyframes_.size(); num_keyframe++)
+    {
+        std::cout << "Num of features in keyframe: " << num_keyframe << " - " << my_map.keyframes_[num_keyframe].features_.size() << std::endl;
+    }
     
-
     ros::spin();
 
     return 0;
