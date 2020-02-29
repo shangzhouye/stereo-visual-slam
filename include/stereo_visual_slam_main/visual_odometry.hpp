@@ -148,10 +148,6 @@ public:
     */
     int set_ref_3d_position(std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors, Frame &frame);
 
-    /*! \brief visualize the feature detection and matching
-    */
-    void feature_visualize();
-
     /*! \brief estimate the motion using PnP
     */
     void motion_estimation(Frame &frame);
@@ -194,14 +190,15 @@ public:
                                    const cv::Mat &K, Sophus::SE3d &pose);
 
     /*! \brief pipeline of the tracking thread
-    *
+    * 
+    *  \return return false if VO is lost
     */
-    void pipeline();
+    bool pipeline();
 
     /*! \brief insert current frame as the keyframe
     *
     */
-    void insert_key_frame(std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors);
+    void insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors);
 };
 
 } // namespace vslam

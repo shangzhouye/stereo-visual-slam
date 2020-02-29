@@ -72,6 +72,7 @@ struct Observation
 {
     int keyframe_id_;
     int feature_id_;
+    bool to_delete = false;
 
     Observation(int keyframe_id, int feature_id)
         : keyframe_id_(keyframe_id), feature_id_(feature_id) {}

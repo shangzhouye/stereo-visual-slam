@@ -20,8 +20,8 @@ public:
     // number of active keyframes
     const int num_keyframes_ = 7;
 
-    // id of the current frame
-    int current_frame_id_ = 0;
+    // id of the current keyframe
+    int current_keyframe_id_ = 0;
 
 public:
     Map() {}
@@ -39,6 +39,18 @@ public:
     *  \return if successful
     */
     int insert_landmark(Landmark landmark_to_add);
+
+    /*! \brief remove a keyframe from the map
+    *
+    *  \return if successful
+    */
+    int remove_keyframe();
+
+    /*! \brief clean the map: remove landmarks with no observations
+    *
+    *  \return if successful
+    */
+    int clean_map();
 };
 
 } // namespace vslam

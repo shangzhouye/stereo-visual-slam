@@ -83,10 +83,10 @@ int VO::feature_detection(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoin
     descriptor_->compute(img, keypoints, descriptors);
 
     // show output image
-    // cv::Mat outimg1;
-    // cv::drawKeypoints(img, keypoints, outimg1);
-    // cv::imshow("ORB features", outimg1);
-    // cv::waitKey(1);
+    cv::Mat outimg1;
+    cv::drawKeypoints(img, keypoints, outimg1);
+    cv::imshow("ORB features", outimg1);
+    cv::waitKey(1);
 
     return 0;
 }
@@ -121,18 +121,18 @@ void VO::adaptive_non_maximal_suppresion(std::vector<cv::KeyPoint> &keypoints,
     // the smallest distance to another point that is significantly stronger (based on a robustness parameter)
     for (int i = 0; i < keypoints.size(); ++i)
     {
-        const float response = keypoints[i].response * c_robust;
+        const float response = keypoints.at(i).response * c_robust;
 
         // maximum finit number of double
         double radius = std::numeric_limits<double>::max();
 
-        for (int j = 0; j < i && keypoints[j].response > response; ++j)
+        for (int j = 0; j < i && keypoints.at(j).response > response; ++j)
         {
-            radius = std::min(radius, cv::norm(keypoints[i].pt - keypoints[j].pt));
+            radius = std::min(radius, cv::norm(keypoints.at(i).pt - keypoints.at(j).pt));
         }
 
-        rad_i[i] = radius;
-        rad_i_sorted[i] = radius;
+        rad_i.at(i) = radius;
+        rad_i_sorted.at(i) = radius;
     }
 
     // sort it
@@ -141,12 +141,12 @@ void VO::adaptive_non_maximal_suppresion(std::vector<cv::KeyPoint> &keypoints,
     });
 
     // find the final radius
-    const double final_radius = rad_i_sorted[num - 1];
+    const double final_radius = rad_i_sorted.at(num - 1);
     for (int i = 0; i < rad_i.size(); ++i)
     {
-        if (rad_i[i] >= final_radius)
+        if (rad_i.at(i) >= final_radius)
         {
-            ANMSpt.push_back(keypoints[i]);
+            ANMSpt.push_back(keypoints.at(i));
         }
     }
 
@@ -217,19 +217,20 @@ int VO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptor
 
     auto min_element = min_max.first;
     auto max_element = min_max.second;
-    // std::cout << "Min distance: " << min_element->distance << std::endl;
-    // std::cout << "Max distance: " << max_element->distance << std::endl;
+    std::cout << "Min distance: " << min_element->distance << std::endl;
+    std::cout << "Max distance: " << max_element->distance << std::endl;
 
     // threshold: distance should be smaller than two times of min distance or a give threshold
+    double frame_gap = frame_current_.frame_id_ - frame_last_.frame_id_;
     for (int i = 0; i < matches_crosscheck.size(); i++)
     {
-        if (matches_crosscheck[i].distance <= std::max(2.0 * min_element->distance, 30.0))
+        if (matches_crosscheck.at(i).distance <= std::max(2.0 * min_element->distance, 30.0 * frame_gap))
         {
-            feature_matches.push_back(matches_crosscheck[i]);
+            feature_matches.push_back(matches_crosscheck.at(i));
         }
     }
 
-    // std::cout << "Number of matches after threshold: " << feature_matches.size() << std::endl;
+    std::cout << "Number of matches after threshold: " << feature_matches.size() << std::endl;
 
     return 0;
 }
@@ -249,7 +250,7 @@ void VO::motion_estimation(Frame &frame)
             std::cout << "No landmark associated!" << std::endl;
         }
 
-        pts3d.push_back(my_map_.landmarks_[landmark_id].pt_3d_);
+        pts3d.push_back(my_map_.landmarks_.at(landmark_id).pt_3d_);
         pts2d.push_back(frame.features_.at(i).keypoint_.pt);
     }
 
@@ -286,7 +287,7 @@ void VO::motion_estimation(Frame &frame)
     frame.features_.erase(std::remove_if(
                               frame.features_.begin(), frame.features_.end(),
                               [](const Feature &x) {
-                                  return x.is_inlier == false; // put your condition here
+                                  return x.is_inlier == false;
                               }),
                           frame.features_.end());
 
@@ -325,9 +326,10 @@ bool VO::check_motion_estimation()
     return true;
 }
 
-void VO::insert_key_frame(std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors)
+void VO::insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors)
 {
-    if (num_inliers_ >= 80)
+    // if the number of inliers is enough or the frame is rejected
+    if (num_inliers_ >= 80 || check == false)
     {
         return;
     }
@@ -340,14 +342,14 @@ void VO::insert_key_frame(std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyP
     for (int i = 0; i < frame_current_.features_.size(); i++)
     {
         int landmark_id = frame_current_.features_.at(i).landmark_id_;
-        my_map_.landmarks_[landmark_id].observed_times_++;
+        my_map_.landmarks_.at(landmark_id).observed_times_++;
         Observation observation(frame_current_.keyframe_id_, frame_current_.features_.at(i).feature_id_);
-        my_map_.landmarks_[landmark_id].observations_.push_back(observation);
+        my_map_.landmarks_.at(landmark_id).observations_.push_back(observation);
 
         std::cout << "Landmark " << landmark_id << " "
-                  << "has obsevation times: " << my_map_.landmarks_[landmark_id].observed_times_ << std::endl;
+                  << "has obsevation times: " << my_map_.landmarks_.at(landmark_id).observed_times_ << std::endl;
         std::cout << "Landmark " << landmark_id << " "
-                  << "last observation keyframe: " << my_map_.landmarks_[landmark_id].observations_.back().keyframe_id_ << std::endl;
+                  << "last observation keyframe: " << my_map_.landmarks_.at(landmark_id).observations_.back().keyframe_id_ << std::endl;
     }
 
     // add more features with triangulated points to the map
@@ -415,9 +417,9 @@ void VO::rviz_visualize()
     // publish feature map
     std::vector<cv::Point3f> pts_3d;
     pts_3d.clear();
-    for (int i = 0; i < my_map_.landmarks_.size(); i++)
+    for (auto &lm : my_map_.landmarks_)
     {
-        pts_3d.push_back(my_map_.landmarks_[i].pt_3d_);
+        pts_3d.push_back(lm.second.pt_3d_);
     }
     my_visual_.publish_feature_map(pts_3d);
 
@@ -496,11 +498,23 @@ bool VO::tracking()
     std::vector<cv::DMatch> feature_matches;
 
     cv::Mat descriptors_last;
+    std::vector<cv::KeyPoint> keypoints_last;
     for (int i = 0; i < frame_last_.features_.size(); i++)
     {
         descriptors_last.push_back(frame_last_.features_.at(i).descriptor_);
+        keypoints_last.push_back(frame_last_.features_.at(i).keypoint_);
     }
     feature_matching(descriptors_last, descriptors_detected, feature_matches);
+    std::cout << "****************** The size of features in two frames" << std::endl
+              << descriptors_last.size() << std::endl
+              << descriptors_detected.size() << std::endl;
+
+    // show matched images
+    cv::Mat img;
+    cv::drawMatches(frame_last_.left_img_, keypoints_last, frame_current_.left_img_, keypoints_detected,
+                    feature_matches, img);
+    cv::imshow("feature matches", img);
+    cv::waitKey(1);
 
     for (int i = 0; i < feature_matches.size(); i++)
     {
@@ -535,7 +549,7 @@ bool VO::tracking()
     bool check = check_motion_estimation();
 
     std::vector<cv::Point3f> pts_3d;
-    insert_key_frame(pts_3d, keypoints_detected, descriptors_detected);
+    insert_key_frame(check, pts_3d, keypoints_detected, descriptors_detected);
     std::cout << "  Num of features in frame: " << frame_current_.features_.size() << std::endl;
 
     if (check)
@@ -555,7 +569,7 @@ bool VO::tracking()
     return check;
 }
 
-void VO::pipeline()
+bool VO::pipeline()
 {
 
     // ros::Time time_start = ros::Time::now();
@@ -598,18 +612,20 @@ void VO::pipeline()
     case Lost:
     {
         std::cout << "VO IS LOST" << std::endl;
-        return;
+        return false;
         break;
     }
     default:
         std::cout << "Invalid state" << std::endl;
-        return;
+        return false;
         break;
     }
 
     // ros::Time time_end = ros::Time::now();
     // ROS_INFO("Time for this loop is: %f", (time_end - time_start).toSec());
     ros::spinOnce();
+
+    return true;
 }
 
 } // namespace vslam
