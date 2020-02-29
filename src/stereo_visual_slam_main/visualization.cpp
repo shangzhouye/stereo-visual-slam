@@ -28,7 +28,7 @@ int VslamVisual::points_to_feature_map(const std::vector<cv::Point3f> &point_3d)
     feature_map_.header.stamp = ros::Time::now();
 
     // Modify this to current frame
-    feature_map_.header.frame_id = "/camera";
+    feature_map_.header.frame_id = "/map";
 
     feature_map_.height = 1;
     feature_map_.width = point_3d.size();

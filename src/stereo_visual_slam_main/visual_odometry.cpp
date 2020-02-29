@@ -173,7 +173,8 @@ int VO::disparity_map(const Frame &frame, cv::Mat &disparity)
 
 int VO::set_ref_3d_position(std::vector<cv::Point3f> &pts_3d,
                             std::vector<cv::KeyPoint> &keypoints,
-                            cv::Mat &descriptors)
+                            cv::Mat &descriptors,
+                            Frame &frame)
 {
     // clear existing 3D positions
     pts_3d.clear();
@@ -184,9 +185,10 @@ int VO::set_ref_3d_position(std::vector<cv::Point3f> &pts_3d,
 
     for (size_t i = 0; i < keypoints.size(); i++)
     {
-        Eigen::Vector3d pos_3d = frame_last_.find_3d(keypoints.at(i));
+        Eigen::Vector3d relative_pos_3d;
+        Eigen::Vector3d pos_3d = frame.find_3d(keypoints.at(i), relative_pos_3d);
         // filer out points with no depth information (disparity value = -1)
-        if (pos_3d(2) > 10 && pos_3d(2) < 400)
+        if (relative_pos_3d(2) > 10 && relative_pos_3d(2) < 400)
         {
             pts_3d.push_back(cv::Point3f(pos_3d(0), pos_3d(1), pos_3d(2)));
             descriptors_last_filtered.push_back(descriptors.row(i));
@@ -242,6 +244,11 @@ void VO::motion_estimation(Frame &frame)
     for (int i = 0; i < frame.features_.size(); i++)
     {
         int landmark_id = frame.features_.at(i).landmark_id_;
+        if (landmark_id == -1)
+        {
+            std::cout << "No landmark associated!" << std::endl;
+        }
+
         pts3d.push_back(my_map_.landmarks_[landmark_id].pt_3d_);
         pts2d.push_back(frame.features_.at(i).keypoint_.pt);
     }
@@ -264,7 +271,7 @@ void VO::motion_estimation(Frame &frame)
         SO3_R_cv.at<double>(1, 0), SO3_R_cv.at<double>(1, 1), SO3_R_cv.at<double>(1, 2),
         SO3_R_cv.at<double>(2, 0), SO3_R_cv.at<double>(2, 1), SO3_R_cv.at<double>(2, 2);
 
-    T_c_l_ = SE3(
+    T_c_w_ = SE3(
         SO3_R,
         Eigen::Vector3d(tvec.at<double>(0, 0), tvec.at<double>(1, 0), tvec.at<double>(2, 0)));
 
@@ -275,7 +282,148 @@ void VO::motion_estimation(Frame &frame)
         frame.features_.at(index).is_inlier = true;
     }
 
+    // delete outliers
+    frame.features_.erase(std::remove_if(
+                              frame.features_.begin(), frame.features_.end(),
+                              [](const Feature &x) {
+                                  return x.is_inlier == false; // put your condition here
+                              }),
+                          frame.features_.end());
+
     // std::cout << "T_c_l Translation x: " << tvec.at<double>(0, 0) << "; y: " << tvec.at<double>(1, 0) << "; z: " << tvec.at<double>(2, 0) << std::endl;
+}
+
+bool VO::check_motion_estimation()
+{
+    // check the number of inliers
+    if (num_inliers_ < 10)
+    {
+        std::cout << "Frame id: " << frame_last_.frame_id_ << " and " << frame_current_.frame_id_ << std::endl;
+        std::cout << "Rejected - inliers not enough: " << num_inliers_ << std::endl;
+        return false;
+    }
+
+    // check if the motion is too large
+    Sophus::Vector6d displacement = T_c_l_.log();
+    double frame_gap = frame_current_.frame_id_ - frame_last_.frame_id_; // get the idx gap between last and current frame
+    if (displacement.norm() > (5.0 * frame_gap))
+    {
+        std::cout << "Frame id: " << frame_last_.frame_id_ << " and " << frame_current_.frame_id_ << std::endl;
+        std::cout << "Rejected - motion is too large: " << displacement.norm() << std::endl;
+        return false;
+    }
+
+    // check if the motion is forward
+    Eigen::Vector3d translation = T_c_l_.translation();
+    if (translation(2) > 0.5)
+    {
+        std::cout << "Frame id: " << frame_last_.frame_id_ << " and " << frame_current_.frame_id_ << std::endl;
+        std::cout << "Rejected - motion is backward: " << T_c_w_.transZ << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+void VO::insert_key_frame(std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors)
+{
+    if (num_inliers_ >= 80)
+    {
+        return;
+    }
+
+    // fill the extra information
+    frame_current_.is_keyframe_ = true;
+    frame_current_.keyframe_id_ = curr_keyframe_id_;
+
+    // add observations
+    for (int i = 0; i < frame_current_.features_.size(); i++)
+    {
+        int landmark_id = frame_current_.features_.at(i).landmark_id_;
+        my_map_.landmarks_[landmark_id].observed_times_++;
+        Observation observation(frame_current_.keyframe_id_, frame_current_.features_.at(i).feature_id_);
+        my_map_.landmarks_[landmark_id].observations_.push_back(observation);
+
+        std::cout << "Landmark " << landmark_id << " "
+                  << "has obsevation times: " << my_map_.landmarks_[landmark_id].observed_times_ << std::endl;
+        std::cout << "Landmark " << landmark_id << " "
+                  << "last observation keyframe: " << my_map_.landmarks_[landmark_id].observations_.back().keyframe_id_ << std::endl;
+    }
+
+    // add more features with triangulated points to the map
+    disparity_map(frame_current_, frame_current_.disparity_);
+    set_ref_3d_position(pts_3d, keypoints, descriptors, frame_current_);
+
+    // calculate the world coordinate
+    // no relative motion any more
+
+    int feature_id = frame_current_.features_.size();
+    // if the feature does not exist in the frame already, add it
+    for (int i = 0; i < keypoints.size(); i++)
+    {
+        bool exist = false;
+        for (auto &feat : frame_current_.features_)
+        {
+            if (feat.keypoint_.pt.x == keypoints.at(i).pt.x && feat.keypoint_.pt.y == keypoints.at(i).pt.y)
+            {
+                exist = true;
+            }
+        }
+        if (exist == false)
+        {
+            // add this feature
+            // put the features into the frame with feature_id, frame_id, keypoint, descriptor
+            // build the connection from feature to frame
+            Feature feature_to_add(feature_id, frame_current_.frame_id_,
+                                   keypoints.at(i), descriptors.row(i));
+
+            // build the connection from feature to landmark
+            feature_to_add.landmark_id_ = curr_landmark_id_;
+            frame_current_.features_.push_back(feature_to_add);
+            // create a landmark
+            // build the connection from landmark to feature
+            Observation observation(frame_current_.frame_id_, feature_id);
+            Landmark landmark_to_add(curr_landmark_id_, pts_3d.at(i), descriptors.row(i), observation);
+            curr_landmark_id_++;
+            // insert the landmark
+            my_map_.insert_landmark(landmark_to_add);
+            feature_id++;
+        }
+    }
+    curr_keyframe_id_++;
+
+    // insert the keyframe
+    my_map_.insert_keyframe(frame_current_);
+
+    std::cout << "Set frame: " << frame_current_.frame_id_ << " as keyframe "
+              << frame_current_.keyframe_id_ << std::endl;
+}
+
+void VO::move_frame()
+{
+    frame_last_ = frame_current_;
+}
+
+void VO::rviz_visualize()
+{
+    // currently using opencv to show the image
+    // cv::Mat outimg;
+    // cv::drawKeypoints(frame_last_.left_img_, keypoints_last_, outimg);
+    // cv::imshow("ORB features", outimg);
+    // cv::waitKey(1);
+
+    // publish feature map
+    std::vector<cv::Point3f> pts_3d;
+    pts_3d.clear();
+    for (int i = 0; i < my_map_.landmarks_.size(); i++)
+    {
+        pts_3d.push_back(my_map_.landmarks_[i].pt_3d_);
+    }
+    my_visual_.publish_feature_map(pts_3d);
+
+    // publish transform
+    my_visual_.publish_transform(T_c_w_);
+    ros::spinOnce();
 }
 
 bool VO::initialization()
@@ -294,9 +442,9 @@ bool VO::initialization()
 
     disparity_map(frame_last_, frame_last_.disparity_);
 
-    set_ref_3d_position(pts_3d, keypoints_detected, descriptors_detected);
+    set_ref_3d_position(pts_3d, keypoints_detected, descriptors_detected, frame_last_);
 
-    for (int i = 0; i < keypoints_detected.size(); ++i)
+    for (int i = 0; i < keypoints_detected.size(); i++)
     {
         // put the features into the frame with feature_id, frame_id, keypoint, descriptor
         // build the connection from feature to frame
@@ -368,7 +516,7 @@ bool VO::tracking()
     }
 
     // debug printing
-    std::cout << "  Num of features in keyframe: " << frame_current_.features_.size() << std::endl;
+    std::cout << "  Num of features in frame: " << frame_current_.features_.size() << std::endl;
     std::cout << "  Feature 0 - id: " << frame_current_.features_.at(0).feature_id_ << std::endl;
     std::cout << "  Feature 0 - frame: " << frame_current_.features_.at(0).frame_id_ << std::endl;
     std::cout << "  Feature 0 - x position: " << frame_current_.features_.at(0).keypoint_.pt.x << std::endl;
@@ -376,19 +524,26 @@ bool VO::tracking()
     std::cout << "  Feature 0 - landmark: " << frame_current_.features_.at(0).landmark_id_ << std::endl;
 
     motion_estimation(frame_current_);
+    // debug printing
+    std::cout << "  Num of features remaining in frame (RANSAC): " << frame_current_.features_.size() << std::endl;
 
-    // feature_visualize();
+    frame_current_.T_c_w_ = T_c_w_;
 
-    // motion_estimation();
+    T_c_l_ = frame_current_.T_c_w_ * frame_last_.T_c_w_.inverse();
+    std::cout << "  PnP estimated pose: " << frame_current_.T_c_w_.translation() << std::endl;
 
-    // bool check = check_motion_estimation();
-    // if (check)
-    // {
-    //     T_c_w_ = T_c_l_ * T_c_w_;
-    //     // write_pose();
-    //     rviz_visualize();
-    //     move_frame();
-    // }
+    bool check = check_motion_estimation();
+
+    std::vector<cv::Point3f> pts_3d;
+    insert_key_frame(pts_3d, keypoints_detected, descriptors_detected);
+    std::cout << "  Num of features in frame: " << frame_current_.features_.size() << std::endl;
+
+    if (check)
+    {
+        // write_pose();
+        rviz_visualize();
+        move_frame();
+    }
 
     seq_++;
 
@@ -397,7 +552,64 @@ bool VO::tracking()
     // wait for user input for debugging
     // while (std::cin.get() != '\n');
 
-    return true;
+    return check;
+}
+
+void VO::pipeline()
+{
+
+    // ros::Time time_start = ros::Time::now();
+
+    switch (state_)
+    {
+    case Init:
+    {
+
+        if (initialization())
+        {
+            state_ = Track;
+        }
+        else
+        {
+            num_lost_++;
+            if (num_lost_ > 10)
+            {
+                state_ = Lost;
+            }
+        }
+        break;
+    }
+    case Track:
+    {
+        if (tracking())
+        {
+            num_lost_ = 0;
+        }
+        else
+        {
+            num_lost_++;
+            if (num_lost_ > 10)
+            {
+                state_ = Lost;
+            }
+        }
+        break;
+    }
+    case Lost:
+    {
+        std::cout << "VO IS LOST" << std::endl;
+        return;
+        break;
+    }
+    default:
+        std::cout << "Invalid state" << std::endl;
+        return;
+        break;
+    }
+
+    // ros::Time time_end = ros::Time::now();
+    // ROS_INFO("Time for this loop is: %f", (time_end - time_start).toSec());
+    ros::spinOnce();
 }
 
 } // namespace vslam

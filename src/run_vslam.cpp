@@ -22,19 +22,21 @@ int main(int argc, char **argv)
 
     vslam::Map my_map;
     vslam::VO my_VO(dataset, nh, my_map);
-    my_VO.initialization();
-    my_VO.tracking();
 
-    // debug printing
-    std::cout << "Num of landmarks: " << my_map.landmarks_.size() << std::endl;
-    std::cout << "  Lanmark 0 - id: " << my_map.landmarks_[0].landmark_id_ << std::endl;
-    std::cout << "  Lanmark 0 - observed_times: " << my_map.landmarks_[0].observed_times_ << std::endl;
-    std::cout << "  Lanmark 0 - x position: " << my_map.landmarks_[0].pt_3d_.x << std::endl;
-    std::cout << "  Lanmark 0 - feature id: " << my_map.landmarks_[0].observations_.at(0).feature_id_ << std::endl;
-    std::cout << "Num of keyframes: " << my_map.keyframes_.size() << std::endl;
-    for (int num_keyframe = 0; num_keyframe < my_map.keyframes_.size(); num_keyframe++)
+    for (int ite = 0; ite < 1000; ite++)
     {
-        std::cout << "  Num of features in keyframe: " << num_keyframe << " - " << my_map.keyframes_[num_keyframe].features_.size() << std::endl;
+        my_VO.pipeline();
+        // debug printing
+        std::cout << "Num of landmarks: " << my_map.landmarks_.size() << std::endl;
+        std::cout << "  Lanmark 0 - id: " << my_map.landmarks_[0].landmark_id_ << std::endl;
+        std::cout << "  Lanmark 0 - observed_times: " << my_map.landmarks_[0].observed_times_ << std::endl;
+        std::cout << "  Lanmark 0 - x position: " << my_map.landmarks_[0].pt_3d_.x << std::endl;
+        std::cout << "  Lanmark 0 - first feature id: " << my_map.landmarks_[0].observations_.at(0).feature_id_ << std::endl;
+        std::cout << "Num of keyframes: " << my_map.keyframes_.size() << std::endl;
+        for (int num_keyframe = 0; num_keyframe < my_map.keyframes_.size(); num_keyframe++)
+        {
+            std::cout << "  Num of features in keyframe: " << num_keyframe << " - " << my_map.keyframes_[num_keyframe].features_.size() << std::endl;
+        }
     }
 
     ros::spin();

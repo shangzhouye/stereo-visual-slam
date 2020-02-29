@@ -19,7 +19,7 @@ struct Feature
 public:
     int feature_id_;
     int frame_id_;
-    int landmark_id_;
+    int landmark_id_ = -1;
     cv::KeyPoint keypoint_; // 2d position in the pixel frame
     cv::Mat descriptor_;    // feature descriptor of this landmark
     bool is_inlier = false;
@@ -60,7 +60,7 @@ public:
     Frame(int frame_id, double timestamp, const cv::Mat &left, const cv::Mat &right)
         : frame_id_(frame_id), left_img_(left), right_img_(right) {}
 
-    Eigen::Vector3d find_3d(const cv::KeyPoint &kp);
+    Eigen::Vector3d find_3d(const cv::KeyPoint &kp, Eigen::Vector3d &relative_pt3d);
 
     /*! \brief fill in the remaining information needed for the frame
     *

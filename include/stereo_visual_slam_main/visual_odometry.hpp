@@ -51,7 +51,7 @@ public:
     int num_inliers_ = 0; // number of inliers after RANSAC
 
     SE3 T_c_l_ = SE3(); // T_current(camera)_last(camera)
-    // SE3 T_c_w_ = SE3(); // T_current(camera)_world
+    SE3 T_c_w_ = SE3(); // T_current(camera)_world
 
     int seq_ = 1; // sequence number
 
@@ -146,7 +146,7 @@ public:
     * 
     *  \return if successful
     */
-    int set_ref_3d_position(std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors);
+    int set_ref_3d_position(std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors, Frame &frame);
 
     /*! \brief visualize the feature detection and matching
     */
@@ -197,6 +197,11 @@ public:
     *
     */
     void pipeline();
+
+    /*! \brief insert current frame as the keyframe
+    *
+    */
+    void insert_key_frame(std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors);
 };
 
 } // namespace vslam
