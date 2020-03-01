@@ -166,7 +166,7 @@ public:
     * 
     * three cols are x, y and z respectively
     */
-    void write_pose();
+    void write_pose(const Frame &frame);
 
     /*! \brief publish pose, pointcloud, image to rviz
     * 
@@ -198,7 +198,7 @@ public:
     /*! \brief insert current frame as the keyframe
     *
     */
-    void insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors);
+    bool insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors);
 };
 
 } // namespace vslam

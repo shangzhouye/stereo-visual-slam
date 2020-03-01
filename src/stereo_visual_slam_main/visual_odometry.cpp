@@ -83,10 +83,10 @@ int VO::feature_detection(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoin
     descriptor_->compute(img, keypoints, descriptors);
 
     // show output image
-    cv::Mat outimg1;
-    cv::drawKeypoints(img, keypoints, outimg1);
-    cv::imshow("ORB features", outimg1);
-    cv::waitKey(1);
+    // cv::Mat outimg1;
+    // cv::drawKeypoints(img, keypoints, outimg1);
+    // cv::imshow("ORB features", outimg1);
+    // cv::waitKey(1);
 
     return 0;
 }
@@ -217,8 +217,8 @@ int VO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptor
 
     auto min_element = min_max.first;
     auto max_element = min_max.second;
-    std::cout << "Min distance: " << min_element->distance << std::endl;
-    std::cout << "Max distance: " << max_element->distance << std::endl;
+    // std::cout << "Min distance: " << min_element->distance << std::endl;
+    // std::cout << "Max distance: " << max_element->distance << std::endl;
 
     // threshold: distance should be smaller than two times of min distance or a give threshold
     double frame_gap = frame_current_.frame_id_ - frame_last_.frame_id_;
@@ -230,7 +230,7 @@ int VO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptor
         }
     }
 
-    std::cout << "Number of matches after threshold: " << feature_matches.size() << std::endl;
+    // std::cout << "Number of matches after threshold: " << feature_matches.size() << std::endl;
 
     return 0;
 }
@@ -326,12 +326,13 @@ bool VO::check_motion_estimation()
     return true;
 }
 
-void VO::insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors)
+bool VO::insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors)
 {
     // if the number of inliers is enough or the frame is rejected
+    // parameter tunning
     if (num_inliers_ >= 80 || check == false)
     {
-        return;
+        return false;
     }
 
     // fill the extra information
@@ -399,6 +400,8 @@ void VO::insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vec
 
     std::cout << "Set frame: " << frame_current_.frame_id_ << " as keyframe "
               << frame_current_.keyframe_id_ << std::endl;
+
+    return true;
 }
 
 void VO::move_frame()
@@ -426,6 +429,36 @@ void VO::rviz_visualize()
     // publish transform
     my_visual_.publish_transform(T_c_w_);
     ros::spinOnce();
+}
+
+void VO::write_pose(const Frame &frame)
+{
+    SE3 T_w_c;
+    T_w_c = frame.T_c_w_.inverse();
+    double r00, r01, r02, r10, r11, r12, r20, r21, r22, x, y, z;
+    Eigen::Matrix3d rotation = T_w_c.rotationMatrix();
+    Eigen::Vector3d translation = T_w_c.translation();
+    r00 = rotation(0, 0);
+    r01 = rotation(0, 1);
+    r02 = rotation(0, 2);
+    r10 = rotation(1, 0);
+    r11 = rotation(1, 1);
+    r12 = rotation(1, 2);
+    r20 = rotation(2, 0);
+    r21 = rotation(2, 1);
+    r22 = rotation(2, 2);
+    x = translation(0);
+    y = translation(1);
+    z = translation(2);
+
+    std::ofstream file;
+    file.open("estimated_traj.txt", std::ios_base::app);
+
+    // alows dropping frame
+    file << frame.frame_id_ << " " << r00 << " " << r01 << " " << r02 << " " << x << " "
+         << r10 << " " << r11 << " " << r12 << " " << y << " "
+         << r20 << " " << r21 << " " << r22 << " " << z << std::endl;
+    file.close();
 }
 
 bool VO::initialization()
@@ -479,6 +512,8 @@ bool VO::initialization()
     // insert the keyframe
     my_map_.insert_keyframe(frame_last_);
 
+    // write_pose(frame_last_);
+
     return true;
 }
 
@@ -510,11 +545,11 @@ bool VO::tracking()
               << descriptors_detected.size() << std::endl;
 
     // show matched images
-    cv::Mat img;
-    cv::drawMatches(frame_last_.left_img_, keypoints_last, frame_current_.left_img_, keypoints_detected,
-                    feature_matches, img);
-    cv::imshow("feature matches", img);
-    cv::waitKey(1);
+    // cv::Mat img;
+    // cv::drawMatches(frame_last_.left_img_, keypoints_last, frame_current_.left_img_, keypoints_detected,
+    //                 feature_matches, img);
+    // cv::imshow("feature matches", img);
+    // cv::waitKey(1);
 
     for (int i = 0; i < feature_matches.size(); i++)
     {
@@ -549,12 +584,17 @@ bool VO::tracking()
     bool check = check_motion_estimation();
 
     std::vector<cv::Point3f> pts_3d;
-    insert_key_frame(check, pts_3d, keypoints_detected, descriptors_detected);
+    bool if_insert_keyframe = false;
+    if_insert_keyframe = insert_key_frame(check, pts_3d, keypoints_detected, descriptors_detected);
+    // if (if_insert_keyframe)
+    // {   
+    //     // only record pose for keyframes
+    //     write_pose(frame_current_);
+    // }
     std::cout << "  Num of features in frame: " << frame_current_.features_.size() << std::endl;
 
     if (check)
     {
-        // write_pose();
         rviz_visualize();
         move_frame();
     }

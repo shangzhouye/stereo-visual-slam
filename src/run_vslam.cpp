@@ -23,7 +23,7 @@ int main(int argc, char **argv)
     vslam::Map my_map;
     vslam::VO my_VO(dataset, nh, my_map);
 
-    for (int ite = 0; ite < 4050; ite++)
+    for (int ite = 0; ite < 4540; ite++)
     {
         bool not_lost = true;
         not_lost = my_VO.pipeline();
