@@ -147,10 +147,16 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 find_package(Sophus REQUIRED)
 include_directories(${Sophus_INCLUDE_DIRS})
 
-# g2o
+
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_module)
+
+# g2o
 find_package(G2O REQUIRED)
 include_directories(${G2O_INCLUDE_DIRS})
+
+# csparse
+find_package(CSparse REQUIRED)
+include_directories(${CSPARSE_INCLUDE_DIR})
 
 add_library(types_def src/stereo_visual_slam_main/types_def.cpp)
 add_dependencies(types_def ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -170,7 +176,7 @@ add_dependencies(optimization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPOR
 add_executable(${PROJECT_NAME}_run_vslam src/run_vslam.cpp)
 set_target_properties(${PROJECT_NAME}_run_vslam PROPERTIES OUTPUT_NAME run_vslam PREFIX "")
 add_dependencies(${PROJECT_NAME}_run_vslam ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} visual_odometry visualization optimization types_def)
-target_link_libraries(${PROJECT_NAME}_run_vslam types_def map visualization visual_odometry optimization ${catkin_LIBRARIES} ${OpenCV_LIBS} ${Sophus_LIBRARIES} g2o_core g2o_stuff)
+target_link_libraries(${PROJECT_NAME}_run_vslam types_def map visualization visual_odometry optimization ${catkin_LIBRARIES} ${OpenCV_LIBS} ${Sophus_LIBRARIES} ${CSPARSE_LIBRARY} g2o_core g2o_stuff g2o_types_sba g2o_solver_csparse g2o_csparse_extension)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

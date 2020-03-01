@@ -19,6 +19,7 @@
 #include <g2o/core/optimization_algorithm_gauss_newton.h>
 #include <g2o/core/optimization_algorithm_levenberg.h>
 #include <g2o/solvers/dense/linear_solver_dense.h>
+#include <g2o/solvers/csparse/linear_solver_csparse.h>
 #include <g2o/core/robust_kernel_impl.h>
 #include <g2o/core/base_binary_edge.h>
 

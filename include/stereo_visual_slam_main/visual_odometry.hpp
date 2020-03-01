@@ -170,15 +170,6 @@ public:
     void adaptive_non_maximal_suppresion(std::vector<cv::KeyPoint> &keypoints,
                                          const int num);
 
-    /*! \brief single frame nonlinear optimization using g2o after PnP
-    *  \param points_3d - 3D landmark points
-    *  \param points_2d - 2D corresponding points in the image
-    *  \param K - intrinsic matrix K
-    *  \param pose - the pose to be optimized
-    */
-    void single_frame_optimization(const G2OVector3d &points_3d, const G2OVector2d &points_2d,
-                                   const cv::Mat &K, Sophus::SE3d &pose);
-
     /*! \brief pipeline of the tracking thread
     * 
     *  \return return false if VO is lost
