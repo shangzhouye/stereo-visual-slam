@@ -71,12 +71,15 @@ public:
     *
     *  \param dataset - the address of the dataset
     *  \param nh - the node handle
+    *  \param map - the map owned by the ros node
     */
     VO(std::string dataset, ros::NodeHandle &nh, Map &map);
 
     /*! \brief read left and right images into a frame
     *
     *  \param id - id of the frame, starts from zero
+    *  \param left_img - the postion left image is write to
+    *  \param right_img - the postion right image is write to
     *  \return if the reading is successful
     */
     int read_img(int id, cv::Mat &left_img, cv::Mat &right_img);
@@ -84,40 +87,18 @@ public:
     /*! \brief calculate the disparity map from two left-right images
     *
     *  \param frame - a frame includes both L/R images
+    *  \param disparity - the postion the disparity map is write to
     *  \return if the calculation is successful
     */
     int disparity_map(const Frame &frame, cv::Mat &disparity);
 
     /*! \brief initialization pipline
-    *
-    * The pipeline includes:
-    * 1. read two frames
-    * 2. disparity map of the last frame
-    * 3. feature detection of the last frame
-    * 4. filter features of the last frame with valid depth
-    * 5. feature detection of the current frame
-    * 6. feature matching
-    * 7. solve PnP
-    * 8. check if successful
-    * 9. move frame
-    * 10. Tcw and seq++
     * 
     *  \return if successful
     */
     bool initialization();
 
     /*! \brief tracking pipline
-    *
-    * The pipeline includes:
-    * 1. read current frame
-    * 2. disparity map of the last frame
-    * 3. filter features of the last frame with valid depth
-    * 4. feature detection of the current frame
-    * 5. feature matching
-    * 6. solve PnP
-    * 7. check if successful
-    * 8. move frame
-    * 9. Tcw and seq++
     * 
     *  \return if successful
     */
@@ -126,6 +107,7 @@ public:
     /*! \brief feature detection
     *
     *  \param img - the image to detect features
+    *  \param keypoints - the keypoints detected
     *  \param descriptors - the descriptors detected
     *  \return if_successful
     */
@@ -144,11 +126,17 @@ public:
     *
     * filter the descriptors in the reference frame, calculate the 3d positions of those features
     * 
+    *  \param pts_3d - output of 3d points
+    *  \param keypoints - filtered keypoints
+    *  \param descriptors - filted descriptors
+    *  \param frame - the current frame
     *  \return if successful
     */
     int set_ref_3d_position(std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors, Frame &frame);
 
     /*! \brief estimate the motion using PnP
+    *
+    *  \param frame - the current frame to etimate motion
     */
     void motion_estimation(Frame &frame);
 
@@ -165,6 +153,8 @@ public:
     /*! \brief write pose to csv file
     * 
     * three cols are x, y and z respectively
+    * 
+    * \param frame - the frame to write pose
     */
     void write_pose(const Frame &frame);
 
@@ -197,6 +187,10 @@ public:
 
     /*! \brief insert current frame as the keyframe
     *
+    *  \param check - the frame is rejected or not
+    *  \param pts_3d - output of 3d points
+    *  \param keypoints - filtered keypoints
+    *  \param descriptors - filted descriptors
     */
     bool insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors);
 };

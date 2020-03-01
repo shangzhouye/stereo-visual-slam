@@ -409,6 +409,70 @@ void VO::move_frame()
     frame_last_ = frame_current_;
 }
 
+void VO::single_frame_optimization(const G2OVector3d &points_3d, const G2OVector2d &points_2d,
+                                   const cv::Mat &K, Sophus::SE3d &pose)
+{
+    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> BlockSolverType;
+    typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType;
+
+    // Use GaussNewton/Levenberg Method
+    auto solver = new g2o::OptimizationAlgorithmLevenberg(
+        g2o::make_unique<BlockSolverType>(g2o::make_unique<LinearSolverType>()));
+    g2o::SparseOptimizer optimizer;
+    optimizer.setAlgorithm(solver);
+    // optimizer.setVerbose(true);
+
+    // vertex
+    VertexPose *vertex_pose = new VertexPose();
+    // there is only one vertex: vertex 0
+    vertex_pose->setId(0);
+    vertex_pose->setEstimate(pose);
+    optimizer.addVertex(vertex_pose);
+
+    // K
+    Eigen::Matrix3d K_eigen;
+    K_eigen << K.at<double>(0, 0), K.at<double>(0, 1), K.at<double>(0, 2),
+        K.at<double>(1, 0), K.at<double>(1, 1), K.at<double>(1, 2),
+        K.at<double>(2, 0), K.at<double>(2, 1), K.at<double>(2, 2);
+
+    // edges
+    int index = 1;
+    for (size_t i = 0; i < points_2d.size(); ++i)
+    {
+        auto p2d = points_2d[i];
+        auto p3d = points_3d[i];
+
+        // add the landmark vertex
+        VertexXYZ *v = new VertexXYZ;
+        v->setEstimate(p3d);
+        v->setId(index);
+        v->setMarginalized(true);
+        optimizer.addVertex(v);
+
+        EdgeProjection *edge = new EdgeProjection(K_eigen);
+        edge->setId(index);
+        // put the edges onto vertex zero
+        edge->setVertex(0, vertex_pose);
+        edge->setVertex(1, v);
+        edge->setMeasurement(p2d);
+        edge->setInformation(Eigen::Matrix2d::Identity());
+        // set the robust kernel
+        auto rk = new g2o::RobustKernelHuber();
+        rk->setDelta(5.991);
+        edge->setRobustKernel(rk);
+        optimizer.addEdge(edge);
+        index++;
+    }
+
+    // optimizer.setVerbose(true);
+    optimizer.initializeOptimization();
+    optimizer.optimize(10);
+
+    // std::cout << "Pose optimized = " << vertex_pose->estimate().matrix() << std::endl;
+
+    pose = vertex_pose->estimate();
+}
+
 void VO::rviz_visualize()
 {
     // currently using opencv to show the image
@@ -587,7 +651,7 @@ bool VO::tracking()
     bool if_insert_keyframe = false;
     if_insert_keyframe = insert_key_frame(check, pts_3d, keypoints_detected, descriptors_detected);
     // if (if_insert_keyframe)
-    // {   
+    // {
     //     // only record pose for keyframes
     //     write_pose(frame_current_);
     // }

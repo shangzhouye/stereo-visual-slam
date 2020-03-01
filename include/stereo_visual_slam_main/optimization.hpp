@@ -20,6 +20,7 @@
 #include <g2o/core/optimization_algorithm_levenberg.h>
 #include <g2o/solvers/dense/linear_solver_dense.h>
 #include <g2o/core/robust_kernel_impl.h>
+#include <g2o/core/base_binary_edge.h>
 
 namespace vslam
 {
@@ -30,6 +31,7 @@ typedef std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> 
 
 // define the vertex
 // parameter: [dimention of parameters to optimize, data type]
+// pose type
 class VertexPose : public g2o::BaseVertex<6, Sophus::SE3d>
 {
 public:
@@ -48,15 +50,30 @@ public:
     virtual bool write(std::ostream &out) const override {}
 };
 
+// define the landmark
+class VertexXYZ : public g2o::BaseVertex<3, Eigen::Matrix<double, 3, 1>>
+{
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+
+    virtual void setToOriginImpl() override { _estimate = Eigen::Matrix<double, 3, 1>::Zero(); }
+
+    virtual void oplusImpl(const double *update) override;
+
+    virtual bool read(std::istream &in) override { return true; }
+
+    virtual bool write(std::ostream &out) const override { return true; }
+};
+
 // define the edge
 // parameter: [dimension of measurement, data type, vertex type]
-class EdgeProjection : public g2o::BaseUnaryEdge<2, Eigen::Vector2d, VertexPose>
+class EdgeProjection : public g2o::BaseBinaryEdge<2, Eigen::Vector2d, VertexPose, VertexXYZ>
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
     // constructor to read in the parameters needed
-    EdgeProjection(const Eigen::Vector3d &point_3d, const Eigen::Matrix3d &K) : point_3d_(point_3d), K_(K) {}
+    EdgeProjection(const Eigen::Matrix3d &K) : K_(K) {}
 
     /*! \brief compute the error
     *
@@ -76,7 +93,6 @@ public:
     virtual bool write(std::ostream &out) const override {}
 
 public:
-    Eigen::Vector3d point_3d_;
     Eigen::Matrix3d K_;
 };
 

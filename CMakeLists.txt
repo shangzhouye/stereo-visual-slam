@@ -169,7 +169,7 @@ add_dependencies(optimization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPOR
 
 add_executable(${PROJECT_NAME}_run_vslam src/run_vslam.cpp)
 set_target_properties(${PROJECT_NAME}_run_vslam PROPERTIES OUTPUT_NAME run_vslam PREFIX "")
-add_dependencies(${PROJECT_NAME}_run_vslam ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} frame visual_odometry visualization optimization map landmark)
+add_dependencies(${PROJECT_NAME}_run_vslam ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} visual_odometry visualization optimization types_def)
 target_link_libraries(${PROJECT_NAME}_run_vslam types_def map visualization visual_odometry optimization ${catkin_LIBRARIES} ${OpenCV_LIBS} ${Sophus_LIBRARIES} g2o_core g2o_stuff)
 
 ## Rename C++ executable without prefix
