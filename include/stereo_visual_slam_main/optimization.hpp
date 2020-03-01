@@ -7,6 +7,7 @@
 #include <iostream>
 #include <stereo_visual_slam_main/library_include.hpp>
 #include <stereo_visual_slam_main/types_def.hpp>
+#include <stereo_visual_slam_main/map.hpp>
 #include <vector>
 #include <string>
 #include <unistd.h>
@@ -96,6 +97,12 @@ public:
 public:
     Eigen::Matrix3d K_;
 };
+
+/*! \brief optimize the keyframes and landmarks in the map
+*/
+void optimize_map(std::unordered_map<unsigned long, Frame> &keyframes,
+                  std::unordered_map<unsigned long, Landmark> &landmarks,
+                  const cv::Mat &K);
 
 } // namespace vslam
 

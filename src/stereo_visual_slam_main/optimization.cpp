@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stereo_visual_slam_main/library_include.hpp>
 #include <stereo_visual_slam_main/types_def.hpp>
+#include <stereo_visual_slam_main/map.hpp>
 #include <vector>
 #include <string>
 #include <unistd.h>
@@ -68,6 +69,131 @@ void EdgeProjection::linearizeOplus()
         fy * Y * Zinv2, fy + fy * Y * Y * Zinv2, -fy * X * Y * Zinv2,
         -fy * X * Zinv;
     _jacobianOplusXj = _jacobianOplusXi.block<2, 3>(0, 0) * T.rotationMatrix();
+}
+
+void optimize_map(std::unordered_map<unsigned long, Frame> &keyframes,
+                  std::unordered_map<unsigned long, Landmark> &landmarks,
+                  const cv::Mat &K)
+{
+    // g2o setup
+    typedef g2o::BlockSolver_6_3 BlockSolverType;
+    typedef g2o::LinearSolverCSparse<BlockSolverType::PoseMatrixType>
+        LinearSolverType;
+
+    // using LM method
+    auto solver = new g2o::OptimizationAlgorithmLevenberg(
+        g2o::make_unique<BlockSolverType>(
+            g2o::make_unique<LinearSolverType>()));
+    g2o::SparseOptimizer optimizer;
+    optimizer.setAlgorithm(solver);
+    optimizer.setVerbose(true);
+
+    // add poses as vertices
+    std::map<unsigned long, VertexPose *> vertices;
+    unsigned long max_kf_id = 0;
+
+    for (auto &keyframe : keyframes)
+    {
+        Frame kf = keyframe.second;
+        VertexPose *vertex_pose = new VertexPose();
+        vertex_pose->setId(kf.keyframe_id_);
+        vertex_pose->setEstimate(kf.T_c_w_);
+        optimizer.addVertex(vertex_pose);
+        if (kf.keyframe_id_ > max_kf_id)
+        {
+            max_kf_id = kf.keyframe_id_;
+        }
+
+        vertices.insert({kf.keyframe_id_, vertex_pose});
+    }
+
+    std::map<unsigned long, VertexXYZ *> vertices_landmarks;
+
+    // K: convert c:mat to eigen matrix
+    Eigen::Matrix3d K_eigen;
+    K_eigen << K.at<double>(0, 0), K.at<double>(0, 1), K.at<double>(0, 2),
+        K.at<double>(1, 0), K.at<double>(1, 1), K.at<double>(1, 2),
+        K.at<double>(2, 0), K.at<double>(2, 1), K.at<double>(2, 2);
+
+    // add edges
+    int index = 1;
+
+    // set robust kernel threshold
+    double chi2_th = 5.991;
+
+    std::map<EdgeProjection *, Feature> edges_and_features;
+
+    for (auto &landmark : landmarks)
+    {
+        unsigned long landmark_id = landmark.second.landmark_id_;
+        std::vector<Observation> observations = landmark.second.observations_;
+        for (Observation &obs : observations)
+        {
+
+            Feature feat = keyframes.at(obs.keyframe_id_).features_.at(obs.feature_id_);
+
+            // if it is not an inlier, do not add it to optimization
+            if (feat.is_inlier == false)
+                continue;
+
+            // create a new edge
+            EdgeProjection *edge = nullptr;
+            edge = new EdgeProjection(K_eigen);
+
+            // add the landmark as vertices
+            if (vertices_landmarks.find(landmark_id) ==
+                vertices_landmarks.end())
+            {
+                VertexXYZ *v = new VertexXYZ;
+                v->setEstimate(landmark.second.to_vector_3d());
+                // set the id following the maximum id of keyframes
+                v->setId(landmark_id + max_kf_id + 1);
+                v->setMarginalized(true);
+                vertices_landmarks.insert({landmark_id, v});
+                optimizer.addVertex(v);
+            }
+
+            edge->setId(index);
+
+            edge->setVertex(0, vertices.at(obs.keyframe_id_));      // pose
+            edge->setVertex(1, vertices_landmarks.at(landmark_id)); // landmark
+
+            // convert cv point to eigen
+            Eigen::Matrix<double, 2, 1> measurement(feat.keypoint_.pt.x, feat.keypoint_.pt.y);
+            edge->setMeasurement(measurement);
+            edge->setInformation(Eigen::Matrix<double, 2, 2>::Identity());
+
+            // set the robust kernel
+            auto rk = new g2o::RobustKernelHuber();
+            rk->setDelta(chi2_th);
+            edge->setRobustKernel(rk);
+
+            edges_and_features.insert({edge, feat});
+
+            optimizer.addEdge(edge);
+
+            index++;
+        }
+    }
+
+    // do optimization
+    optimizer.initializeOptimization();
+    optimizer.optimize(10);
+
+    // print the first pose optimized
+    optimizer.setVerbose(true);
+    std::cout << "Pose optimized (last one) = " << vertices.at(max_kf_id)->estimate().matrix() << std::endl;
+
+    // modify the pose and landmark in the map
+    for (auto &v : vertices)
+    {
+        keyframes.at(v.first).T_c_w_ = v.second->estimate();
+    }
+    for (auto &v : vertices_landmarks)
+    {
+        Eigen::Vector3d modified_pos_3d = v.second->estimate();
+        landmarks.at(v.first).pt_3d_ = cv::Point3f(modified_pos_3d(0), modified_pos_3d(1), modified_pos_3d(2));
+    }
 }
 
 } // namespace vslam

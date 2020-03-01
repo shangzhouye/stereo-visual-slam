@@ -102,7 +102,7 @@ public:
     * 
     *  \return if successful
     */
-    bool tracking();
+    bool tracking(bool &if_insert_keyframe);
 
     /*! \brief feature detection
     *
@@ -174,7 +174,7 @@ public:
     * 
     *  \return return false if VO is lost
     */
-    bool pipeline();
+    bool pipeline(bool &if_insert_keyframe);
 
     /*! \brief insert current frame as the keyframe
     *

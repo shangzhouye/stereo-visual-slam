@@ -96,6 +96,13 @@ public:
     {
         observations_.push_back(observation);
     }
+
+    Eigen::Vector3d to_vector_3d()
+    {
+        Eigen::Vector3d pos_vec;
+        pos_vec << pt_3d_.x, pt_3d_.y, pt_3d_.z;
+        return pos_vec;
+    }
 };
 
 } // namespace vslam

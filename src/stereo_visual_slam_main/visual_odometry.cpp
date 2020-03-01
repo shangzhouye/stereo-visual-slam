@@ -385,7 +385,7 @@ bool VO::insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vec
             frame_current_.features_.push_back(feature_to_add);
             // create a landmark
             // build the connection from landmark to feature
-            Observation observation(frame_current_.frame_id_, feature_id);
+            Observation observation(frame_current_.keyframe_id_, feature_id);
             Landmark landmark_to_add(curr_landmark_id_, pts_3d.at(i), descriptors.row(i), observation);
             curr_landmark_id_++;
             // insert the landmark
@@ -517,7 +517,7 @@ bool VO::initialization()
     return true;
 }
 
-bool VO::tracking()
+bool VO::tracking(bool &if_insert_keyframe)
 {
     // clear current frame
     frame_current_ = Frame();
@@ -590,7 +590,6 @@ bool VO::tracking()
     bool check = check_motion_estimation();
 
     std::vector<cv::Point3f> pts_3d;
-    bool if_insert_keyframe = false;
     if_insert_keyframe = insert_key_frame(check, pts_3d, keypoints_detected, descriptors_detected);
     // if (if_insert_keyframe)
     // {
@@ -615,7 +614,7 @@ bool VO::tracking()
     return check;
 }
 
-bool VO::pipeline()
+bool VO::pipeline(bool &if_insert_keyframe)
 {
 
     // ros::Time time_start = ros::Time::now();
@@ -641,7 +640,7 @@ bool VO::pipeline()
     }
     case Track:
     {
-        if (tracking())
+        if (tracking(if_insert_keyframe))
         {
             num_lost_ = 0;
         }

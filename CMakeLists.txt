@@ -170,7 +170,7 @@ add_dependencies(visualization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPO
 add_library(visual_odometry src/stereo_visual_slam_main/visual_odometry.cpp src/stereo_visual_slam_main/visualization.cpp src/stereo_visual_slam_main/types_def.cpp src/stereo_visual_slam_main/map.cpp)
 add_dependencies(visual_odometry ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_library(optimization src/stereo_visual_slam_main/optimization.cpp  src/stereo_visual_slam_main/visualization.cpp src/stereo_visual_slam_main/types_def.cpp)
+add_library(optimization src/stereo_visual_slam_main/optimization.cpp  src/stereo_visual_slam_main/visualization.cpp src/stereo_visual_slam_main/types_def.cpp src/stereo_visual_slam_main/map.cpp)
 add_dependencies(optimization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(${PROJECT_NAME}_run_vslam src/run_vslam.cpp)
