@@ -281,6 +281,10 @@ void VO::motion_estimation(Frame &frame)
     {
         int index = inliers.at<int>(idx, 0);
         frame.features_.at(index).is_inlier = true;
+
+        // also mark the landmark
+        // currently all landmarks are initialized to true
+        // my_map_.landmarks_.at(frame.features_.at(index).landmark_id_).is_inlier = true;
     }
 
     // delete outliers
@@ -515,7 +519,7 @@ bool VO::initialization()
     // insert the keyframe
     my_map_.insert_keyframe(frame_last_);
 
-    // write_pose(frame_last_);
+    write_pose(frame_last_);
 
     return true;
 }
@@ -594,16 +598,16 @@ bool VO::tracking(bool &if_insert_keyframe)
 
     std::vector<cv::Point3f> pts_3d;
     if_insert_keyframe = insert_key_frame(check, pts_3d, keypoints_detected, descriptors_detected);
-    // if (if_insert_keyframe)
-    // {
-    //     // only record pose for keyframes
-    //     write_pose(frame_current_);
-    // }
+    if (if_insert_keyframe)
+    {
+        // only record pose for keyframes
+        write_pose(frame_current_);
+    }
     std::cout << "  Num of features in frame: " << frame_current_.features_.size() << std::endl;
 
     if (check)
     {
-        rviz_visualize();
+        // rviz_visualize();
         move_frame();
     }
 

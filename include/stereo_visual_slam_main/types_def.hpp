@@ -87,6 +87,8 @@ public:
     cv::Mat descriptor_;     // feature descriptor of this landmark
     int observed_times_ = 1; // number of times being observed
     std::vector<Observation> observations_;
+    bool is_inlier = true;
+
 
 public:
     Landmark() {}
