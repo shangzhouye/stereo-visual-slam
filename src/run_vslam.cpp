@@ -31,7 +31,7 @@ int main(int argc, char **argv)
                  0, fy, cy,
                  0, 0, 1);
 
-    for (int ite = 0; ite < 4540; ite++)
+    for (int ite = 0; ite < 4541; ite++)
     {
         bool not_lost = true;
         bool if_insert_keyframe = false;
@@ -47,10 +47,10 @@ int main(int argc, char **argv)
             std::cout << "  Num of features in keyframe: " << kf.second.keyframe_id_ << " - " << kf.second.features_.size() << std::endl;
         }
 
-        if (if_insert_keyframe && my_map.keyframes_.size() >= 7)
-        {
-            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K);
-        }
+        // if (if_insert_keyframe && my_map.keyframes_.size() >= 7)
+        // {
+        //     vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K);
+        // }
 
         if (not_lost == false)
         {

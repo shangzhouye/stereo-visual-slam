@@ -44,8 +44,8 @@ void EdgeProjection::computeError()
     const VertexXYZ *v1 = static_cast<VertexXYZ *>(_vertices[1]);
     Sophus::SE3d T = v0->estimate();
     Eigen::Vector3d pos_pixel = K_ * (T * v1->estimate());
-    // std::cout << "Estimated pixel: " << pos_pixel[0] << " " << pos_pixel[1] << " " << pos_pixel[2] << " " << std::endl;
     pos_pixel /= pos_pixel[2];
+    // std::cout << "Estimated pixel: " << pos_pixel[0] << " " << pos_pixel[1] << " " << pos_pixel[2] << " " << std::endl;
     _error = _measurement - pos_pixel.head<2>();
 }
 

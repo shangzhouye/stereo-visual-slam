@@ -370,6 +370,9 @@ bool VO::insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vec
             if (feat.keypoint_.pt.x == keypoints.at(i).pt.x && feat.keypoint_.pt.y == keypoints.at(i).pt.y)
             {
                 exist = true;
+
+                // try to update the landmark position if already exist
+                // my_map_.landmarks_.at(feat.landmark_id_).pt_3d_ = pts_3d.at(i);
             }
         }
         if (exist == false)
