@@ -63,6 +63,10 @@
   <exec_depend>tf</exec_depend>
   <build_export_depend>tf</build_export_depend>
 
+  <build_depend>visualization_msgs</build_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <build_export_depend>visualization_msgs</build_export_depend>
+
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

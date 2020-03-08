@@ -11,16 +11,18 @@
 #include <string>
 #include <unistd.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <visualization_msgs/Marker.h>
 
 namespace vslam
 {
 
 class VslamVisual
 {
-    
+
 public:
     sensor_msgs::PointCloud2 feature_map_;
     ros::Publisher feature_map_publisher_;
+    ros::Publisher fixed_pose_pub_;
 
 public:
     VslamVisual() = default;
@@ -29,6 +31,7 @@ public:
     {
         feature_map_publisher_ =
             nh.advertise<sensor_msgs::PointCloud2>("vslam/feature_map", 1);
+        fixed_pose_pub_ = nh.advertise<visualization_msgs::Marker>("fixed_pose", 100);
     }
 
     /*! \brief Convert opencv point3f 3D points to point cloud
@@ -52,6 +55,12 @@ public:
     *  \return if successful
     */
     int publish_transform(const SE3 &T_c_w);
+
+    /*! \brief Publish fixed pose
+    *
+    *  \param frame - the frame of its pose to be published
+    */
+    void publish_fixed_pose(const Frame &frame);
 };
 
 } // namespace vslam

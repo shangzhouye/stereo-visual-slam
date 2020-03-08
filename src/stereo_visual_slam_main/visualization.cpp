@@ -11,6 +11,7 @@
 #include <stereo_visual_slam_main/visualization.hpp>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_datatypes.h>
+#include <visualization_msgs/Marker.h>
 
 namespace vslam
 {
@@ -89,11 +90,50 @@ int VslamVisual::publish_transform(const SE3 &T_c_w)
 
     tf::Transform tf_transformation(tf_rotation, tf_translation);
 
-
     // publish the tf
     static tf::TransformBroadcaster tf_broadcaster;
     tf_broadcaster.sendTransform(tf::StampedTransform(tf_transformation, ros::Time::now(), "/map", "/camera"));
+}
 
+void VslamVisual::publish_fixed_pose(const Frame &frame)
+{
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "/map";
+    marker.header.stamp = ros::Time(0);
+
+    marker.ns = "fixed_pose";
+    marker.id = frame.frame_id_;
+
+    uint32_t shape = visualization_msgs::Marker::CUBE;
+    marker.type = shape;
+
+    marker.action = visualization_msgs::Marker::ADD;
+
+    SE3 T_w_c = frame.T_c_w_.inverse();
+
+    marker.pose.position.x = T_w_c.translation()(0);
+    marker.pose.position.y = T_w_c.translation()(1);
+    marker.pose.position.z = T_w_c.translation()(2);
+    marker.pose.orientation.x = T_w_c.unit_quaternion().x();
+    marker.pose.orientation.y = T_w_c.unit_quaternion().y();
+    marker.pose.orientation.z = T_w_c.unit_quaternion().z();
+    marker.pose.orientation.w = T_w_c.unit_quaternion().w();
+
+    marker.scale.x = 5;
+    marker.scale.y = 5;
+    marker.scale.z = 5;
+
+    marker.color.r = 1.0;
+    marker.color.g = 0.0;
+    marker.color.b = 0.0;
+
+    marker.color.a = 1.0;
+
+    marker.lifetime = ros::Duration();
+
+    fixed_pose_pub_.publish(marker);
+
+    ros::spinOnce();
 }
 
 } // namespace vslam

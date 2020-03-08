@@ -1,1 +1,6 @@
 dataset: '/home/shangzhouye/Documents/slam/data_odometry_gray/dataset/sequences/00/'
+# parameters to tune
+# 1. angular displacement threshold for keyframes
+# 2. distance threshold for including 3D landmarks
+# 3. threshold for excluding closest keyframes
+# 4. number of keyframes in the map

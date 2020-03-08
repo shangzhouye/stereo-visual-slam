@@ -72,6 +72,7 @@ int Map::remove_keyframe()
     {
         // remove the closest if distance is lower than 0.2
         keyframe_to_remove_id = min_keyframe_id;
+        // std::cout << "Removed closest frame" << std::endl;
     }
     else
     {
@@ -93,19 +94,18 @@ int Map::remove_keyframe()
             }
         }
         // delete them
-        landmarks_.at(feat.landmark_id_).observations_.erase(std::remove_if(
-                                                              landmarks_.at(feat.landmark_id_).observations_.begin(),
-                                                              landmarks_.at(feat.landmark_id_).observations_.end(),
-                                                              [](const Observation &x) {
-                                                                  return x.to_delete == true;
-                                                              }),
-                                                          landmarks_.at(feat.landmark_id_).observations_.end());
+        landmarks_.at(feat.landmark_id_).observations_.erase(std::remove_if(landmarks_.at(feat.landmark_id_).observations_.begin(), landmarks_.at(feat.landmark_id_).observations_.end(), [](const Observation &x) {
+                                                                 return x.to_delete == true;
+                                                             }),
+                                                             landmarks_.at(feat.landmark_id_).observations_.end());
         // observation times minus one
         landmarks_.at(feat.landmark_id_).observed_times_--;
     }
 
     // remove the keyframe
     // std::cout << "number of keyframes before: " << keyframes_.size() << std::endl;
+
+    my_visual_.publish_fixed_pose(keyframes_.at(keyframe_to_remove_id));
     keyframes_.erase(keyframe_to_remove_id);
     // std::cout << "number of keyframes after: " << keyframes_.size() << std::endl;
 

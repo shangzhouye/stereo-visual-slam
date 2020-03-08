@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   sensor_msgs
   tf
+  visualization_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -107,7 +108,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES stereo_visual_slam_main
-  CATKIN_DEPENDS roscpp message_runtime sensor_msgs tf
+  CATKIN_DEPENDS roscpp message_runtime sensor_msgs tf visualization_msgs
 #  DEPENDS system_lib
 )
 
@@ -161,11 +162,11 @@ include_directories(${CSPARSE_INCLUDE_DIR})
 add_library(types_def src/stereo_visual_slam_main/types_def.cpp)
 add_dependencies(types_def ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_library(map src/stereo_visual_slam_main/map.cpp src/stereo_visual_slam_main/types_def.cpp)
-add_dependencies(map ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-add_library(visualization src/stereo_visual_slam_main/visualization.cpp)
+add_library(visualization src/stereo_visual_slam_main/visualization.cpp src/stereo_visual_slam_main/types_def.cpp)
 add_dependencies(visualization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_library(map src/stereo_visual_slam_main/map.cpp src/stereo_visual_slam_main/types_def.cpp src/stereo_visual_slam_main/visualization.cpp)
+add_dependencies(map ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_library(visual_odometry src/stereo_visual_slam_main/visual_odometry.cpp src/stereo_visual_slam_main/visualization.cpp src/stereo_visual_slam_main/types_def.cpp src/stereo_visual_slam_main/map.cpp)
 add_dependencies(visual_odometry ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

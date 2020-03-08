@@ -87,7 +87,7 @@ void optimize_map(std::unordered_map<unsigned long, Frame> &keyframes,
             g2o::make_unique<LinearSolverType>()));
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm(solver);
-    optimizer.setVerbose(true);
+    // optimizer.setVerbose(true);
 
     // add poses as vertices
     std::map<unsigned long, VertexPose *> vertices;
@@ -187,8 +187,8 @@ void optimize_map(std::unordered_map<unsigned long, Frame> &keyframes,
     optimizer.optimize(num_ite);
 
     // print the first pose optimized
-    optimizer.setVerbose(true);
-    std::cout << "Pose optimized (last one) = " << vertices.at(max_kf_id)->estimate().matrix() << std::endl;
+    // optimizer.setVerbose(true);
+    // std::cout << "Pose optimized (last one) = " << vertices.at(max_kf_id)->estimate().matrix() << std::endl;
 
     int cnt_outlier = 0, cnt_inlier = 0;
     int iteration = 0;
@@ -234,8 +234,8 @@ void optimize_map(std::unordered_map<unsigned long, Frame> &keyframes,
         }
     }
 
-    std::cout << "Outlier/Inlier in optimization: " << cnt_outlier << "/"
-              << cnt_inlier << " at threshold " << chi2_th << std::endl;
+    // std::cout << "Outlier/Inlier in optimization: " << cnt_outlier << "/"
+    //           << cnt_inlier << " at threshold " << chi2_th << std::endl;
 
     // modify the pose and landmark in the map
     if (if_update_map)

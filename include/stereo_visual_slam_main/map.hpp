@@ -7,6 +7,7 @@
 #include <iostream>
 #include <stereo_visual_slam_main/library_include.hpp>
 #include <stereo_visual_slam_main/types_def.hpp>
+#include <stereo_visual_slam_main/visualization.hpp>
 
 namespace vslam
 {
@@ -18,13 +19,16 @@ public:
     std::unordered_map<unsigned long, Landmark> landmarks_;
 
     // number of active keyframes
-    const int num_keyframes_ = 7;
+    const int num_keyframes_ = 10;
 
     // id of the current keyframe
     int current_keyframe_id_ = 0;
 
+    // visualization module
+    VslamVisual my_visual_;
+
 public:
-    Map() {}
+    Map(ros::NodeHandle &nh) : my_visual_(nh) {}
 
     /*! \brief inset a keyframe into the map
     *
