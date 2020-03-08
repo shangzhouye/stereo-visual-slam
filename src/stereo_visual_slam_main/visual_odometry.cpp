@@ -334,7 +334,8 @@ bool VO::insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vec
 {
     // if the number of inliers is enough or the frame is rejected
     // parameter tunning
-    if (num_inliers_ >= 80 || check == false)
+    // added more keyframes when turning
+    if ((num_inliers_ >= 80 && T_c_l_.angleY() < 0.03) || check == false)
     {
         return false;
     }
@@ -405,8 +406,8 @@ bool VO::insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vec
     // insert the keyframe
     my_map_.insert_keyframe(frame_current_);
 
-    std::cout << "Set frame: " << frame_current_.frame_id_ << " as keyframe "
-              << frame_current_.keyframe_id_ << std::endl;
+    // std::cout << "Set frame: " << frame_current_.frame_id_ << " as keyframe "
+    //           << frame_current_.keyframe_id_ << std::endl;
 
     return true;
 }
@@ -519,7 +520,7 @@ bool VO::initialization()
     // insert the keyframe
     my_map_.insert_keyframe(frame_last_);
 
-    write_pose(frame_last_);
+    // write_pose(frame_last_);
 
     return true;
 }
@@ -594,21 +595,22 @@ bool VO::tracking(bool &if_insert_keyframe)
 
     T_c_l_ = frame_current_.T_c_w_ * frame_last_.T_c_w_.inverse();
     // std::cout << "  PnP estimated pose: " << frame_current_.T_c_w_.translation() << std::endl;
+    // std::cout << "Relative rotation is: " << T_c_l_.angleY() << std::endl;
 
     bool check = check_motion_estimation();
 
     std::vector<cv::Point3f> pts_3d;
     if_insert_keyframe = insert_key_frame(check, pts_3d, keypoints_detected, descriptors_detected);
-    if (if_insert_keyframe)
-    {
-        // only record pose for keyframes
-        write_pose(frame_current_);
-    }
+    // if (if_insert_keyframe)
+    // {
+    //     // only record pose for keyframes
+    //     write_pose(frame_current_);
+    // }
     // std::cout << "  Num of features in frame: " << frame_current_.features_.size() << std::endl;
 
     if (check)
     {
-        // rviz_visualize();
+        rviz_visualize();
         move_frame();
     }
 
