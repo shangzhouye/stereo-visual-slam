@@ -55,6 +55,11 @@ public:
     *  \return if successful
     */
     int clean_map();
+
+    /*! \brief publish keyframes undergoing optimization
+    *
+    */
+    void publish_keyframes();
 };
 
 } // namespace vslam

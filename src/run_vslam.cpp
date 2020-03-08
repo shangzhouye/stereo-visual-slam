@@ -56,6 +56,8 @@ int main(int argc, char **argv)
             vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, true, 10);
         }
 
+        my_map.publish_keyframes();
+
         if (not_lost == false)
         {
             break;

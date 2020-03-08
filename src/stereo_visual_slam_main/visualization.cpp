@@ -136,4 +136,44 @@ void VslamVisual::publish_fixed_pose(const Frame &frame)
     ros::spinOnce();
 }
 
+visualization_msgs::Marker VslamVisual::create_pose_marker(const Frame &frame)
+{
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "/map";
+    marker.header.stamp = ros::Time(0);
+
+    marker.ns = "fixed_pose";
+    marker.id = frame.frame_id_;
+
+    uint32_t shape = visualization_msgs::Marker::CUBE;
+    marker.type = shape;
+
+    marker.action = visualization_msgs::Marker::ADD;
+
+    SE3 T_w_c = frame.T_c_w_.inverse();
+
+    marker.pose.position.x = T_w_c.translation()(0);
+    marker.pose.position.y = T_w_c.translation()(1);
+    marker.pose.position.z = T_w_c.translation()(2);
+    marker.pose.orientation.x = T_w_c.unit_quaternion().x();
+    marker.pose.orientation.y = T_w_c.unit_quaternion().y();
+    marker.pose.orientation.z = T_w_c.unit_quaternion().z();
+    marker.pose.orientation.w = T_w_c.unit_quaternion().w();
+
+    marker.scale.x = 5;
+    marker.scale.y = 5;
+    marker.scale.z = 5;
+
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
+
+    marker.color.a = 1.0;
+
+    // publishing at around 4 Hz
+    marker.lifetime = ros::Duration(1.0 / 4.0);
+
+    return marker;
+}
+
 } // namespace vslam

@@ -3,6 +3,8 @@
 
 #include <stereo_visual_slam_main/map.hpp>
 #include <stereo_visual_slam_main/types_def.hpp>
+#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/Marker.h>
 
 namespace vslam
 {
@@ -134,6 +136,20 @@ int Map::clean_map()
     // std::cout << "Removed landmarks: " << num_landmark_removed << std::endl;
 
     return 0;
+}
+
+void Map::publish_keyframes()
+{
+    visualization_msgs::MarkerArray marker_array;
+    for (auto const &kf : keyframes_)
+    {
+        visualization_msgs::Marker marker = my_visual_.create_pose_marker(kf.second);
+        marker_array.markers.push_back(marker);
+    }
+
+    my_visual_.pose_array_pub_.publish(marker_array);
+
+    ros::spinOnce();
 }
 
 } // namespace vslam

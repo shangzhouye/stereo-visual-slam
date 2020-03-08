@@ -335,7 +335,7 @@ bool VO::insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vec
     // if the number of inliers is enough or the frame is rejected
     // parameter tunning
     // added more keyframes when turning
-    if ((num_inliers_ >= 80 && T_c_l_.angleY() < 0.03) || check == false)
+    if ((num_inliers_ >= 50 && T_c_l_.angleY() < 0.03) || check == false)
     {
         return false;
     }
