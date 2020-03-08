@@ -351,10 +351,10 @@ bool VO::insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vec
         Observation observation(frame_current_.keyframe_id_, frame_current_.features_.at(i).feature_id_);
         my_map_.landmarks_.at(landmark_id).observations_.push_back(observation);
 
-        std::cout << "Landmark " << landmark_id << " "
-                  << "has obsevation times: " << my_map_.landmarks_.at(landmark_id).observed_times_ << std::endl;
-        std::cout << "Landmark " << landmark_id << " "
-                  << "last observation keyframe: " << my_map_.landmarks_.at(landmark_id).observations_.back().keyframe_id_ << std::endl;
+        // std::cout << "Landmark " << landmark_id << " "
+        //           << "has obsevation times: " << my_map_.landmarks_.at(landmark_id).observed_times_ << std::endl;
+        // std::cout << "Landmark " << landmark_id << " "
+        //           << "last observation keyframe: " << my_map_.landmarks_.at(landmark_id).observations_.back().keyframe_id_ << std::endl;
     }
 
     // add more features with triangulated points to the map
@@ -505,12 +505,12 @@ bool VO::initialization()
     }
 
     // debug printing
-    std::cout << "  Num of features in keyframe: " << frame_last_.features_.size() << std::endl;
-    std::cout << "  Feature 0 - id: " << frame_last_.features_.at(0).feature_id_ << std::endl;
-    std::cout << "  Feature 0 - frame: " << frame_last_.features_.at(0).frame_id_ << std::endl;
-    std::cout << "  Feature 0 - x position: " << frame_last_.features_.at(0).keypoint_.pt.x << std::endl;
-    std::cout << "  Feature 0 - descriptor: " << frame_last_.features_.at(0).descriptor_.size() << std::endl;
-    std::cout << "  Feature 0 - landmark: " << frame_last_.features_.at(0).landmark_id_ << std::endl;
+    // std::cout << "  Num of features in keyframe: " << frame_last_.features_.size() << std::endl;
+    // std::cout << "  Feature 0 - id: " << frame_last_.features_.at(0).feature_id_ << std::endl;
+    // std::cout << "  Feature 0 - frame: " << frame_last_.features_.at(0).frame_id_ << std::endl;
+    // std::cout << "  Feature 0 - x position: " << frame_last_.features_.at(0).keypoint_.pt.x << std::endl;
+    // std::cout << "  Feature 0 - descriptor: " << frame_last_.features_.at(0).descriptor_.size() << std::endl;
+    // std::cout << "  Feature 0 - landmark: " << frame_last_.features_.at(0).landmark_id_ << std::endl;
 
     // fill the extra information
     frame_last_.fill_frame(SE3(), true, curr_keyframe_id_);
@@ -553,9 +553,9 @@ bool VO::tracking(bool &if_insert_keyframe)
         keypoints_last.push_back(frame_last_.features_.at(i).keypoint_);
     }
     feature_matching(descriptors_last, descriptors_detected, feature_matches);
-    std::cout << "****************** The size of features in two frames" << std::endl
-              << descriptors_last.size() << std::endl
-              << descriptors_detected.size() << std::endl;
+    // std::cout << "****************** The size of features in two frames" << std::endl
+    //           << descriptors_last.size() << std::endl
+    //           << descriptors_detected.size() << std::endl;
 
     // show matched images
     // cv::Mat img;
@@ -578,21 +578,22 @@ bool VO::tracking(bool &if_insert_keyframe)
     }
 
     // debug printing
-    std::cout << "  Num of features in frame: " << frame_current_.features_.size() << std::endl;
-    std::cout << "  Feature 0 - id: " << frame_current_.features_.at(0).feature_id_ << std::endl;
-    std::cout << "  Feature 0 - frame: " << frame_current_.features_.at(0).frame_id_ << std::endl;
-    std::cout << "  Feature 0 - x position: " << frame_current_.features_.at(0).keypoint_.pt.x << std::endl;
-    std::cout << "  Feature 0 - descriptor: " << frame_current_.features_.at(0).descriptor_.size() << std::endl;
-    std::cout << "  Feature 0 - landmark: " << frame_current_.features_.at(0).landmark_id_ << std::endl;
+    // std::cout << "  Num of features in frame: " << frame_current_.features_.size() << std::endl;
+    // std::cout << "  Feature 0 - id: " << frame_current_.features_.at(0).feature_id_ << std::endl;
+    // std::cout << "  Feature 0 - frame: " << frame_current_.features_.at(0).frame_id_ << std::endl;
+    // std::cout << "  Feature 0 - x position: " << frame_current_.features_.at(0).keypoint_.pt.x << std::endl;
+    // std::cout << "  Feature 0 - descriptor: " << frame_current_.features_.at(0).descriptor_.size() << std::endl;
+    // std::cout << "  Feature 0 - landmark: " << frame_current_.features_.at(0).landmark_id_ << std::endl;
 
     motion_estimation(frame_current_);
+
     // debug printing
-    std::cout << "  Num of features remaining in frame (RANSAC): " << frame_current_.features_.size() << std::endl;
+    // std::cout << "  Num of features remaining in frame (RANSAC): " << frame_current_.features_.size() << std::endl;
 
     frame_current_.T_c_w_ = T_c_w_;
 
     T_c_l_ = frame_current_.T_c_w_ * frame_last_.T_c_w_.inverse();
-    std::cout << "  PnP estimated pose: " << frame_current_.T_c_w_.translation() << std::endl;
+    // std::cout << "  PnP estimated pose: " << frame_current_.T_c_w_.translation() << std::endl;
 
     bool check = check_motion_estimation();
 
@@ -603,7 +604,7 @@ bool VO::tracking(bool &if_insert_keyframe)
         // only record pose for keyframes
         write_pose(frame_current_);
     }
-    std::cout << "  Num of features in frame: " << frame_current_.features_.size() << std::endl;
+    // std::cout << "  Num of features in frame: " << frame_current_.features_.size() << std::endl;
 
     if (check)
     {

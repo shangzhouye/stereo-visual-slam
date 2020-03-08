@@ -64,7 +64,7 @@ int Map::remove_keyframe()
         }
     }
 
-    std::cout << "max_keyframe_id: " << max_keyframe_id << " min_keyframe_id: " << min_keyframe_id << std::endl;
+    // std::cout << "max_keyframe_id: " << max_keyframe_id << " min_keyframe_id: " << min_keyframe_id << std::endl;
 
     const double min_threshold = 0.2;
     int keyframe_to_remove_id = -1;
@@ -78,7 +78,7 @@ int Map::remove_keyframe()
         keyframe_to_remove_id = max_keyframe_id;
     }
 
-    std::cout << "Keyframe removed: " << keyframe_to_remove_id << std::endl;
+    // std::cout << "Keyframe removed: " << keyframe_to_remove_id << std::endl;
 
     // remove observations
     for (auto feat : keyframes_.at(keyframe_to_remove_id).features_)
@@ -105,9 +105,9 @@ int Map::remove_keyframe()
     }
 
     // remove the keyframe
-    std::cout << "number of keyframes before: " << keyframes_.size() << std::endl;
+    // std::cout << "number of keyframes before: " << keyframes_.size() << std::endl;
     keyframes_.erase(keyframe_to_remove_id);
-    std::cout << "number of keyframes after: " << keyframes_.size() << std::endl;
+    // std::cout << "number of keyframes after: " << keyframes_.size() << std::endl;
 
     clean_map();
 
@@ -131,7 +131,7 @@ int Map::clean_map()
         }
     }
 
-    std::cout << "Removed landmarks: " << num_landmark_removed << std::endl;
+    // std::cout << "Removed landmarks: " << num_landmark_removed << std::endl;
 
     return 0;
 }

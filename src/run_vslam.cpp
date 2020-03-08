@@ -36,23 +36,25 @@ int main(int argc, char **argv)
         bool not_lost = true;
         bool if_insert_keyframe = false;
         not_lost = my_VO.pipeline(if_insert_keyframe);
+
         // debug printing
         // learned: accessing non-existing [i] in unordered would create a new component
         // learned: use iterator to traverse unordered map
         // learned: at() throws out-of-range exception whereas operator[] shows undefined behavior.
-        std::cout << "Num of landmarks: " << my_map.landmarks_.size() << std::endl;
-        std::cout << "Num of keyframes: " << my_map.keyframes_.size() << std::endl;
-        for (auto &kf : my_map.keyframes_)
-        {
-            std::cout << "  Num of features in keyframe: " << kf.second.keyframe_id_ << " - " << kf.second.features_.size() << std::endl;
-        }
+        // std::cout << "Num of landmarks: " << my_map.landmarks_.size() << std::endl;
+        // std::cout << "Num of keyframes: " << my_map.keyframes_.size() << std::endl;
+        // for (auto &kf : my_map.keyframes_)
+        // {
+        //     std::cout << "  Num of features in keyframe: " << kf.second.keyframe_id_ << " - " << kf.second.features_.size() << std::endl;
+        // }
 
-        if (if_insert_keyframe && my_map.keyframes_.size() >= 7)
-        {
-            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, 5);
-            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, 5);
-            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, true, 10);
-        }
+        // Optimization
+        // if (if_insert_keyframe && my_map.keyframes_.size() >= 7)
+        // {
+        //     vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, 5);
+        //     vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, 5);
+        //     vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, true, 10);
+        // }
 
         if (not_lost == false)
         {
