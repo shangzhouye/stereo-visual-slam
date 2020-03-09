@@ -5,6 +5,7 @@
 #include <stereo_visual_slam_main/types_def.hpp>
 #include <visualization_msgs/MarkerArray.h>
 #include <visualization_msgs/Marker.h>
+#include <fstream>
 
 namespace vslam
 {
@@ -108,6 +109,7 @@ int Map::remove_keyframe()
     // std::cout << "number of keyframes before: " << keyframes_.size() << std::endl;
 
     my_visual_.publish_fixed_pose(keyframes_.at(keyframe_to_remove_id));
+    // write_pose(keyframes_.at(keyframe_to_remove_id));
     keyframes_.erase(keyframe_to_remove_id);
     // std::cout << "number of keyframes after: " << keyframes_.size() << std::endl;
 
@@ -150,6 +152,44 @@ void Map::publish_keyframes()
     my_visual_.pose_array_pub_.publish(marker_array);
 
     ros::spinOnce();
+}
+
+void Map::write_pose(const Frame &frame)
+{
+    SE3 T_w_c;
+    T_w_c = frame.T_c_w_.inverse();
+    double r00, r01, r02, r10, r11, r12, r20, r21, r22, x, y, z;
+    Eigen::Matrix3d rotation = T_w_c.rotationMatrix();
+    Eigen::Vector3d translation = T_w_c.translation();
+    r00 = rotation(0, 0);
+    r01 = rotation(0, 1);
+    r02 = rotation(0, 2);
+    r10 = rotation(1, 0);
+    r11 = rotation(1, 1);
+    r12 = rotation(1, 2);
+    r20 = rotation(2, 0);
+    r21 = rotation(2, 1);
+    r22 = rotation(2, 2);
+    x = translation(0);
+    y = translation(1);
+    z = translation(2);
+
+    std::ofstream file;
+    file.open("estimated_traj.txt", std::ios_base::app);
+
+    // alows dropping frame
+    file << frame.frame_id_ << " " << r00 << " " << r01 << " " << r02 << " " << x << " "
+         << r10 << " " << r11 << " " << r12 << " " << y << " "
+         << r20 << " " << r21 << " " << r22 << " " << z << std::endl;
+    file.close();
+}
+
+void Map::write_remaining_pose()
+{
+    for (auto const &kf : keyframes_)
+    {
+        write_pose(kf.second);
+    }
 }
 
 } // namespace vslam

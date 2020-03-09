@@ -60,6 +60,17 @@ public:
     *
     */
     void publish_keyframes();
+
+    /*! \brief write the pose to the file
+    *
+    *  \param frame - the pose to write
+    */
+    void write_pose(const Frame &frame);
+
+    /*! \brief write the poses that are currently remaining in the map
+    *
+    */
+    void write_remaining_pose();
 };
 
 } // namespace vslam

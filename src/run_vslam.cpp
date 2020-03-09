@@ -49,11 +49,17 @@ int main(int argc, char **argv)
         // }
 
         // Optimization
+        // if (if_insert_keyframe && my_map.keyframes_.size() >= 10)
+        // {
+        //     vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, 5);
+        //     vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, 5);
+        //     vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, true, 10);
+        // }
+
+        // Optimization (Pose Only)
         if (if_insert_keyframe && my_map.keyframes_.size() >= 10)
         {
-            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, 5);
-            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, 5);
-            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, true, 10);
+            vslam::optimize_pose_only(my_map.keyframes_, my_map.landmarks_, K, true, 10);
         }
 
         my_map.publish_keyframes();
@@ -63,6 +69,8 @@ int main(int argc, char **argv)
             break;
         }
     }
+
+    // my_map.write_remaining_pose();
 
     ros::spin();
 

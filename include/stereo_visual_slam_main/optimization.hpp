@@ -98,11 +98,42 @@ public:
     Eigen::Matrix3d K_;
 };
 
+// pose only projection
+class PoseOnlyEdgeProjection : public g2o::BaseUnaryEdge<2, Eigen::Vector2d, VertexPose>
+{
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+
+    PoseOnlyEdgeProjection(const Eigen::Vector3d &point_3d, const Eigen::Matrix3d &K) : point_3d_(point_3d), K_(K) {}
+
+    /*! \brief compute the error
+    */
+    virtual void computeError() override;
+
+    /*! \brief give the analytic solution of jacobian
+    */
+    virtual void linearizeOplus() override;
+
+    virtual bool read(std::istream &in) override {}
+
+    virtual bool write(std::ostream &out) const override {}
+
+public:
+    Eigen::Vector3d point_3d_;
+    Eigen::Matrix3d K_;
+};
+
 /*! \brief optimize the keyframes and landmarks in the map
 */
 void optimize_map(std::unordered_map<unsigned long, Frame> &keyframes,
                   std::unordered_map<unsigned long, Landmark> &landmarks,
                   const cv::Mat &K, bool if_update_map, int num_ite);
+
+/*! \brief optimize only the poses of the keyframes in the map
+*/
+void optimize_pose_only(std::unordered_map<unsigned long, Frame> &keyframes,
+                        std::unordered_map<unsigned long, Landmark> &landmarks,
+                        const cv::Mat &K, bool if_update_map, int num_ite);
 
 } // namespace vslam
 
