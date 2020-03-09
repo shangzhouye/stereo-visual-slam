@@ -1,8 +1,8 @@
 dataset: '/home/shangzhouye/Documents/slam/data_odometry_gray/dataset/sequences/00/'
 # whether write the pose to the file or not
-if_write_pose: true
+if_write_pose: false
 # whether use rviz visualization
-if_rviz: false
+if_rviz: true
 
 # parameters to tune
 # 1. angular displacement threshold for keyframes
