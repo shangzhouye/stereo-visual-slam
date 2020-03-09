@@ -108,8 +108,16 @@ int Map::remove_keyframe()
     // remove the keyframe
     // std::cout << "number of keyframes before: " << keyframes_.size() << std::endl;
 
-    my_visual_.publish_fixed_pose(keyframes_.at(keyframe_to_remove_id));
-    // write_pose(keyframes_.at(keyframe_to_remove_id));
+    if (if_rviz_)
+    {
+        my_visual_.publish_fixed_pose(keyframes_.at(keyframe_to_remove_id));
+    }
+
+    if (if_write_pose_)
+    {
+        write_pose(keyframes_.at(keyframe_to_remove_id));
+    }
+
     keyframes_.erase(keyframe_to_remove_id);
     // std::cout << "number of keyframes after: " << keyframes_.size() << std::endl;
 

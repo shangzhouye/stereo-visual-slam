@@ -21,6 +21,12 @@ int main(int argc, char **argv)
     std::string dataset;
     nh.getParam("/dataset", dataset);
 
+    bool if_write_pose;
+    nh.getParam("/if_write_pose", if_write_pose);
+
+    bool if_rviz;
+    nh.getParam("/if_rviz", if_rviz);
+
     vslam::Map my_map(nh);
     vslam::VO my_VO(dataset, nh, my_map);
 
@@ -48,21 +54,24 @@ int main(int argc, char **argv)
         //     std::cout << "  Num of features in keyframe: " << kf.second.keyframe_id_ << " - " << kf.second.features_.size() << std::endl;
         // }
 
-        // Optimization
+        // Optimization (Pose Only)
         // if (if_insert_keyframe && my_map.keyframes_.size() >= 10)
         // {
-        //     vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, 5);
-        //     vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, 5);
-        //     vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, true, 10);
+        //     vslam::optimize_pose_only(my_map.keyframes_, my_map.landmarks_, K, true, 10);
         // }
 
-        // Optimization (Pose Only)
+        // Optimization
         if (if_insert_keyframe && my_map.keyframes_.size() >= 10)
         {
-            vslam::optimize_pose_only(my_map.keyframes_, my_map.landmarks_, K, true, 10);
+            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, 5);
+            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, 5);
+            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, true, 10);
         }
 
-        my_map.publish_keyframes();
+        if (if_rviz)
+        {
+            my_map.publish_keyframes();
+        }
 
         if (not_lost == false)
         {
@@ -70,7 +79,10 @@ int main(int argc, char **argv)
         }
     }
 
-    // my_map.write_remaining_pose();
+    if (if_write_pose)
+    {
+        my_map.write_remaining_pose();
+    }
 
     ros::spin();
 

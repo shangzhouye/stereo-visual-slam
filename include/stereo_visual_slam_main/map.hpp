@@ -27,8 +27,15 @@ public:
     // visualization module
     VslamVisual my_visual_;
 
+    bool if_write_pose_;
+    bool if_rviz_;
+
 public:
-    Map(ros::NodeHandle &nh) : my_visual_(nh) {}
+    Map(ros::NodeHandle &nh) : my_visual_(nh)
+    {
+        nh.getParam("/if_write_pose", if_write_pose_);
+        nh.getParam("/if_rviz", if_rviz_);
+    }
 
     /*! \brief inset a keyframe into the map
     *

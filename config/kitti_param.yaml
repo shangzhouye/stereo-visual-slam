@@ -1,7 +1,18 @@
 dataset: '/home/shangzhouye/Documents/slam/data_odometry_gray/dataset/sequences/00/'
+# whether write the pose to the file or not
+if_write_pose: true
+# whether use rviz visualization
+if_rviz: false
+
 # parameters to tune
 # 1. angular displacement threshold for keyframes
 # 2. distance threshold for including 3D landmarks
 # 3. threshold for excluding closest keyframes
 # 4. number of keyframes in the map
 # 5. number of inliers to set a new keyframe
+# 6. whether modify the landmarks or not
+
+# ToDo
+# Only optimizing within 50m and do not modify landmarks
+# have write pose mode and visualization mode
+# visualize the groundtruth

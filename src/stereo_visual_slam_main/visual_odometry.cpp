@@ -22,6 +22,7 @@ VO::VO(ros::NodeHandle &nh, Map &map) : my_visual_(nh), my_map_(map)
     detector_ = cv::ORB::create(3000);
     descriptor_ = cv::ORB::create();
     matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
+    nh.getParam("/if_rviz", if_rviz_);
 }
 
 VO::VO(std::string dataset, ros::NodeHandle &nh, Map &map) : my_visual_(nh), my_map_(map)
@@ -30,6 +31,7 @@ VO::VO(std::string dataset, ros::NodeHandle &nh, Map &map) : my_visual_(nh), my_
     detector_ = cv::ORB::create(3000);
     descriptor_ = cv::ORB::create();
     matcher_crosscheck_ = cv::BFMatcher::create(cv::NORM_HAMMING, true);
+    nh.getParam("/if_rviz", if_rviz_);
 }
 
 int VO::read_img(int id, cv::Mat &left_img, cv::Mat &right_img)
@@ -610,7 +612,10 @@ bool VO::tracking(bool &if_insert_keyframe)
 
     if (check)
     {
-        rviz_visualize();
+        if (if_rviz_)
+        {
+            rviz_visualize();
+        }
         move_frame();
     }
 

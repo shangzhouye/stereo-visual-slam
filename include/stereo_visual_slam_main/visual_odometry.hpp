@@ -64,6 +64,8 @@ public:
     int curr_keyframe_id_ = 0;
     int curr_landmark_id_ = 0;
 
+    bool if_rviz_;
+
 public:
     VO(ros::NodeHandle &nh, Map &map);
 
