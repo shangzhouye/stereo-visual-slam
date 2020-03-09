@@ -13,6 +13,4 @@ if_rviz: false
 # 6. whether modify the landmarks or not
 
 # ToDo
-# Only optimizing within 50m and do not modify landmarks
-# have write pose mode and visualization mode
 # visualize the groundtruth

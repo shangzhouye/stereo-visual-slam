@@ -102,7 +102,10 @@ void PoseOnlyEdgeProjection::linearizeOplus()
 
 void optimize_map(std::unordered_map<unsigned long, Frame> &keyframes,
                   std::unordered_map<unsigned long, Landmark> &landmarks,
-                  const cv::Mat &K, bool if_update_map, int num_ite)
+                  const cv::Mat &K,
+                  bool if_update_map,
+                  bool if_update_landmark,
+                  int num_ite)
 {
     // g2o setup
     typedef g2o::BlockSolver_6_3 BlockSolverType;
@@ -154,7 +157,7 @@ void optimize_map(std::unordered_map<unsigned long, Frame> &keyframes,
 
     for (auto &landmark : landmarks)
     {
-        if (landmark.second.is_inlier == false)
+        if (landmark.second.is_inlier == false || landmark.second.reliable_depth_ == false)
         {
             continue;
         }
@@ -273,10 +276,13 @@ void optimize_map(std::unordered_map<unsigned long, Frame> &keyframes,
         {
             keyframes.at(v.first).T_c_w_ = v.second->estimate();
         }
-        for (auto &v : vertices_landmarks)
+        if (if_update_landmark)
         {
-            Eigen::Vector3d modified_pos_3d = v.second->estimate();
-            landmarks.at(v.first).pt_3d_ = cv::Point3f(modified_pos_3d(0), modified_pos_3d(1), modified_pos_3d(2));
+            for (auto &v : vertices_landmarks)
+            {
+                Eigen::Vector3d modified_pos_3d = v.second->estimate();
+                landmarks.at(v.first).pt_3d_ = cv::Point3f(modified_pos_3d(0), modified_pos_3d(1), modified_pos_3d(2));
+            }
         }
     }
 }

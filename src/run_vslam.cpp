@@ -63,9 +63,9 @@ int main(int argc, char **argv)
         // Optimization
         if (if_insert_keyframe && my_map.keyframes_.size() >= 10)
         {
-            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, 5);
-            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, 5);
-            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, true, 10);
+            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, false, 5);
+            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, false, 5);
+            vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, true, false, 10);
         }
 
         if (if_rviz)

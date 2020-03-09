@@ -127,7 +127,7 @@ public:
 */
 void optimize_map(std::unordered_map<unsigned long, Frame> &keyframes,
                   std::unordered_map<unsigned long, Landmark> &landmarks,
-                  const cv::Mat &K, bool if_update_map, int num_ite);
+                  const cv::Mat &K, bool if_update_map, bool if_update_landmark, int num_ite);
 
 /*! \brief optimize only the poses of the keyframes in the map
 */

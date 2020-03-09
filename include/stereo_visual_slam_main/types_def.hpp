@@ -88,13 +88,13 @@ public:
     int observed_times_ = 1; // number of times being observed
     std::vector<Observation> observations_;
     bool is_inlier = true;
-
+    bool reliable_depth_ = false;
 
 public:
     Landmark() {}
 
-    Landmark(int landmark_id, cv::Point3f pt_3d, cv::Mat descriptor, Observation observation)
-        : landmark_id_(landmark_id), pt_3d_(pt_3d), descriptor_(descriptor)
+    Landmark(int landmark_id, cv::Point3f pt_3d, cv::Mat descriptor, bool reliable_depth, Observation observation)
+        : landmark_id_(landmark_id), pt_3d_(pt_3d), descriptor_(descriptor), reliable_depth_(reliable_depth)
     {
         observations_.push_back(observation);
     }

@@ -132,9 +132,10 @@ public:
     *  \param keypoints - filtered keypoints
     *  \param descriptors - filted descriptors
     *  \param frame - the current frame
+    *  \return - a list of reliable depth
     *  \return if successful
     */
-    int set_ref_3d_position(std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors, Frame &frame);
+    std::vector<bool> set_ref_3d_position(std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors, Frame &frame);
 
     /*! \brief estimate the motion using PnP
     *

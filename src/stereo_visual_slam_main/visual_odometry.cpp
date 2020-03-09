@@ -173,10 +173,10 @@ int VO::disparity_map(const Frame &frame, cv::Mat &disparity)
     return 0;
 }
 
-int VO::set_ref_3d_position(std::vector<cv::Point3f> &pts_3d,
-                            std::vector<cv::KeyPoint> &keypoints,
-                            cv::Mat &descriptors,
-                            Frame &frame)
+std::vector<bool> VO::set_ref_3d_position(std::vector<cv::Point3f> &pts_3d,
+                                          std::vector<cv::KeyPoint> &keypoints,
+                                          cv::Mat &descriptors,
+                                          Frame &frame)
 {
     // clear existing 3D positions
     pts_3d.clear();
@@ -184,6 +184,7 @@ int VO::set_ref_3d_position(std::vector<cv::Point3f> &pts_3d,
     // create filetered descriptors for replacement
     cv::Mat descriptors_last_filtered;
     std::vector<cv::KeyPoint> keypoints_last_filtered;
+    std::vector<bool> reliable_depth;
 
     for (size_t i = 0; i < keypoints.size(); i++)
     {
@@ -195,12 +196,24 @@ int VO::set_ref_3d_position(std::vector<cv::Point3f> &pts_3d,
             pts_3d.push_back(cv::Point3f(pos_3d(0), pos_3d(1), pos_3d(2)));
             descriptors_last_filtered.push_back(descriptors.row(i));
             keypoints_last_filtered.push_back(keypoints.at(i));
+
+            // mark reliable depth information
+            if (relative_pos_3d(2) < 40)
+            {
+                reliable_depth.push_back(true);
+            }
+            else
+            {
+                reliable_depth.push_back(false);
+            }
         }
     }
 
     // copy the filtered descriptors;
     descriptors = descriptors_last_filtered;
     keypoints = keypoints_last_filtered;
+
+    return reliable_depth;
 }
 
 int VO::feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptors_2, std::vector<cv::DMatch> &feature_matches)
@@ -321,13 +334,13 @@ bool VO::check_motion_estimation()
     }
 
     // check if the motion is forward
-    Eigen::Vector3d translation = T_c_l_.translation();
-    if (translation(2) > 0.5)
-    {
-        std::cout << "Frame id: " << frame_last_.frame_id_ << " and " << frame_current_.frame_id_ << std::endl;
-        std::cout << "Rejected - motion is backward: " << T_c_w_.transZ << std::endl;
-        return false;
-    }
+    // Eigen::Vector3d translation = T_c_l_.translation();
+    // if (translation(2) > 1)
+    // {
+    //     std::cout << "Frame id: " << frame_last_.frame_id_ << " and " << frame_current_.frame_id_ << std::endl;
+    //     std::cout << "Rejected - motion is backward: " << translation(2) << std::endl;
+    //     return false;
+    // }
 
     return true;
 }
@@ -362,7 +375,7 @@ bool VO::insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vec
 
     // add more features with triangulated points to the map
     disparity_map(frame_current_, frame_current_.disparity_);
-    set_ref_3d_position(pts_3d, keypoints, descriptors, frame_current_);
+    std::vector<bool> reliable_depth = set_ref_3d_position(pts_3d, keypoints, descriptors, frame_current_);
 
     // calculate the world coordinate
     // no relative motion any more
@@ -379,7 +392,11 @@ bool VO::insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vec
                 exist = true;
 
                 // try to update the landmark position if already exist
-                // my_map_.landmarks_.at(feat.landmark_id_).pt_3d_ = pts_3d.at(i);
+                if ((my_map_.landmarks_.at(feat.landmark_id_).reliable_depth_ == false) && (reliable_depth.at(i) == true))
+                {
+                    my_map_.landmarks_.at(feat.landmark_id_).pt_3d_ = pts_3d.at(i);
+                    my_map_.landmarks_.at(feat.landmark_id_).reliable_depth_ = true;
+                }
             }
         }
         if (exist == false)
@@ -396,7 +413,7 @@ bool VO::insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vec
             // create a landmark
             // build the connection from landmark to feature
             Observation observation(frame_current_.keyframe_id_, feature_id);
-            Landmark landmark_to_add(curr_landmark_id_, pts_3d.at(i), descriptors.row(i), observation);
+            Landmark landmark_to_add(curr_landmark_id_, pts_3d.at(i), descriptors.row(i), reliable_depth.at(i), observation);
             curr_landmark_id_++;
             // insert the landmark
             my_map_.insert_landmark(landmark_to_add);
@@ -487,7 +504,7 @@ bool VO::initialization()
 
     disparity_map(frame_last_, frame_last_.disparity_);
 
-    set_ref_3d_position(pts_3d, keypoints_detected, descriptors_detected, frame_last_);
+    std::vector<bool> reliable_depth = set_ref_3d_position(pts_3d, keypoints_detected, descriptors_detected, frame_last_);
 
     for (int i = 0; i < keypoints_detected.size(); i++)
     {
@@ -501,7 +518,7 @@ bool VO::initialization()
         // build the connection from landmark to feature
         // this 0 is also the keyframe id
         Observation observation(0, i);
-        Landmark landmark_to_add(curr_landmark_id_, pts_3d.at(i), descriptors_detected.row(i), observation);
+        Landmark landmark_to_add(curr_landmark_id_, pts_3d.at(i), descriptors_detected.row(i), reliable_depth.at(i), observation);
         curr_landmark_id_++;
         // insert the landmark
         my_map_.insert_landmark(landmark_to_add);
