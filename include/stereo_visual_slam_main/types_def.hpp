@@ -1,7 +1,7 @@
 #ifndef TYPES_INCLUDE_GUARD_HPP
 #define TYPES_INCLUDE_GUARD_HPP
 /// \file
-/// \brief Definition of frame struct
+/// \brief Definition of frame, landmark, feature struct
 
 #include <cmath>
 #include <iostream>
@@ -60,10 +60,19 @@ public:
     Frame(int frame_id, double timestamp, const cv::Mat &left, const cv::Mat &right)
         : frame_id_(frame_id), left_img_(left), right_img_(right) {}
 
+    /*! \brief find the 3D position of a feature point
+     * 
+     *  \param kp - keypoint in the image
+     *  \param relative_pt3d - the relative 3d position in this frame will be returned
+     *  \return 3D position of the landmark in world coordinate
+    */
     Eigen::Vector3d find_3d(const cv::KeyPoint &kp, Eigen::Vector3d &relative_pt3d);
 
     /*! \brief fill in the remaining information needed for the frame
-    *
+     * 
+     *  \param T_c_w - transformation T_c_w
+     *  \param is_keyframe - whether this frame is a keyframe
+     *  \param keyframe_id - keyframe id (different from frame id)
     */
     void fill_frame(SE3 T_c_w, bool is_keyframe, int keyframe_id);
 };
@@ -99,6 +108,10 @@ public:
         observations_.push_back(observation);
     }
 
+    /*! \brief convert a OpenCV point3f to Eigen Vector3d
+     * 
+     *  \return converted Eigen Vector3d
+    */
     Eigen::Vector3d to_vector_3d()
     {
         Eigen::Vector3d pos_vec;

@@ -40,7 +40,6 @@ public:
     /*! \brief Convert opencv point3f 3D points to point cloud
     *
     *  \param points_3d - points generated in Opencv
-    *  \param feature_map - the variable to store feature map
     *  \return if successful
     */
     int points_to_feature_map(const std::vector<cv::Point3f> &point_3d);
@@ -68,6 +67,7 @@ public:
     /*! \brief Create a marker for a frame
     *
     *  \param frame - the frame to be marked
+    *  \return returns the marker created
     */
     visualization_msgs::Marker create_pose_marker(const Frame &frame);
 };

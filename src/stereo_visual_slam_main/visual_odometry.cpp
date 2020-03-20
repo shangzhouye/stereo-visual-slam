@@ -85,10 +85,10 @@ int VO::feature_detection(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoin
     descriptor_->compute(img, keypoints, descriptors);
 
     // show output image
-    // cv::Mat outimg1;
-    // cv::drawKeypoints(img, keypoints, outimg1);
-    // cv::imshow("ORB features", outimg1);
-    // cv::waitKey(1);
+    cv::Mat outimg1;
+    cv::drawKeypoints(img, keypoints, outimg1);
+    cv::imshow("ORB features", outimg1);
+    cv::waitKey(1);
 
     return 0;
 }

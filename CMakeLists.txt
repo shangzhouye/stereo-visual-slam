@@ -254,6 +254,16 @@ add_compile_options(-Wall -Werror)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+install(TARGETS types_def map visualization visual_odometry optimization
+ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+
+install(TARGETS ${PROJECT_NAME}_run_vslam
+   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 # use clang as the compiler
 # set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 # set(CMAKE_C_COMPILER "/usr/bin/clang")

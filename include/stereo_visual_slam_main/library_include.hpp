@@ -1,22 +1,24 @@
 #ifndef LIBRARY_INCLUDE_H
 #define LIBRARY_INCLUDE_H
+/// \file
+/// \brief Include libraries that are commonly used in the package
 
-// ros
+// ROS
 #include "ros/ros.h"
 
-// for eigen
+// Eigen
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/Dense>
 
-// for Sophus
+// Sophus
 #include "sophus/se3.hpp"
 #include "sophus/so3.hpp"
 
 typedef Sophus::SE3d SE3;
 typedef Sophus::SO3d SO3;
 
-// for cv
+// OpenCV
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
 

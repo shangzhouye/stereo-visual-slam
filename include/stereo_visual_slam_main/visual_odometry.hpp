@@ -34,15 +34,6 @@ public:
     Frame frame_current_;
     Map &my_map_;
 
-    // std::vector<cv::Point3f> pts_3d_last_;
-
-    // std::vector<cv::KeyPoint> keypoints_last_;
-    // std::vector<cv::KeyPoint> keypoints_curr_;
-    // cv::Mat descriptors_last_;
-    // cv::Mat descriptors_curr_;
-
-    // std::vector<cv::DMatch> feature_matches_;
-
     std::string dataset_;
     cv::Ptr<cv::FeatureDetector> detector_;
     cv::Ptr<cv::DescriptorExtractor> descriptor_;
@@ -102,7 +93,8 @@ public:
 
     /*! \brief tracking pipline
     * 
-    *  \return if successful
+    *  \param if_insert_keyframe - return whether this frame is added as keyframe
+    *  \return whether the motion estimation is rejected or not
     */
     bool tracking(bool &if_insert_keyframe);
 
@@ -122,7 +114,8 @@ public:
     *  \param feature_matches - feature matches
     *  \return if successful
     */
-    int feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptors_2, std::vector<cv::DMatch> &feature_matches);
+    int feature_matching(const cv::Mat &descriptors_1, const cv::Mat &descriptors_2,
+                         std::vector<cv::DMatch> &feature_matches);
 
     /*! \brief set reference 3d positions for the last frame
     *
@@ -133,9 +126,9 @@ public:
     *  \param descriptors - filted descriptors
     *  \param frame - the current frame
     *  \return - a list of reliable depth
-    *  \return if successful
     */
-    std::vector<bool> set_ref_3d_position(std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors, Frame &frame);
+    std::vector<bool> set_ref_3d_position(std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints,
+                                          cv::Mat &descriptors, Frame &frame);
 
     /*! \brief estimate the motion using PnP
     *
@@ -174,7 +167,8 @@ public:
                                          const int num);
 
     /*! \brief pipeline of the tracking thread
-    * 
+    *
+    *  \param if_insert_keyframe - return whether this frame is added as keyframe
     *  \return return false if VO is lost
     */
     bool pipeline(bool &if_insert_keyframe);
@@ -186,7 +180,8 @@ public:
     *  \param keypoints - filtered keypoints
     *  \param descriptors - filted descriptors
     */
-    bool insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors);
+    bool insert_key_frame(bool check, std::vector<cv::Point3f> &pts_3d, std::vector<cv::KeyPoint> &keypoints,
+                          cv::Mat &descriptors);
 };
 
 } // namespace vslam

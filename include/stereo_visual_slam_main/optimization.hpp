@@ -124,12 +124,28 @@ public:
 };
 
 /*! \brief optimize the keyframes and landmarks in the map
+ * 
+ *  \param keyframes - a reference of keyframes in the map
+ *  \param landmarks - a reference of landmarks in the map
+ *  \param K - Camera intrinsic parameters
+ *  \param if_update_map - whether modify the poses and landmarks according to optimization results
+ *                          if set to true, the map will be updated
+ *  \param if_update_landmark - whether modify the landmarks in the map
+ *                          if set to false, only poses will be updated
+ *  \param num_ite - number of iterations
 */
 void optimize_map(std::unordered_map<unsigned long, Frame> &keyframes,
                   std::unordered_map<unsigned long, Landmark> &landmarks,
                   const cv::Mat &K, bool if_update_map, bool if_update_landmark, int num_ite);
 
 /*! \brief optimize only the poses of the keyframes in the map
+ * 
+ *  \param keyframes - a reference of keyframes in the map
+ *  \param landmarks - a reference of landmarks in the map
+ *  \param K - Camera intrinsic parameters
+ *  \param if_update_map - whether modify the poses according to optimization results
+ *                          if set to true, the map will be updated
+ *  \param num_ite - number of iterations
 */
 void optimize_pose_only(std::unordered_map<unsigned long, Frame> &keyframes,
                         std::unordered_map<unsigned long, Landmark> &landmarks,

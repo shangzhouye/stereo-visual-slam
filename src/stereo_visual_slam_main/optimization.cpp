@@ -426,7 +426,6 @@ void optimize_pose_only(std::unordered_map<unsigned long, Frame> &keyframes,
     // std::cout << "Outlier/Inlier in optimization: " << cnt_outlier << "/"
     //           << cnt_inlier << " at threshold " << chi2_th << std::endl;
 
-    // modify the pose and landmark in the map
     if (if_update_map)
     {
         for (auto &v : vertices)

@@ -54,18 +54,20 @@ int main(int argc, char **argv)
         //     std::cout << "  Num of features in keyframe: " << kf.second.keyframe_id_ << " - " << kf.second.features_.size() << std::endl;
         // }
 
-        // Optimization (Pose Only)
-        // if (if_insert_keyframe && my_map.keyframes_.size() >= 10)
-        // {
-        //     vslam::optimize_pose_only(my_map.keyframes_, my_map.landmarks_, K, true, 10);
-        // }
-
         // Optimization
         if (if_insert_keyframe && my_map.keyframes_.size() >= 10)
         {
+            // reject the outliers
             vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, false, 5);
             vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, false, false, 5);
+            // do the optimization
             vslam::optimize_map(my_map.keyframes_, my_map.landmarks_, K, true, false, 10);
+        }
+
+        // Optimization (Pose Only)
+        if (if_insert_keyframe && my_map.keyframes_.size() >= 10)
+        {
+            vslam::optimize_pose_only(my_map.keyframes_, my_map.landmarks_, K, true, 10);
         }
 
         if (if_rviz)
