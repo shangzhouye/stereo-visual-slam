@@ -4,11 +4,11 @@
 
 This [video](https://www.youtube.com/watch?v=QccAICorVHE&t=14s) shows the stereo visual SLAM system tested on the KITTI dataset sequence 00.
 
-![orb_feature](https://github.com/shangzhouye/portfolio-website/blob/master/content/project/stereo_slam/figures/orb_feature.gif?raw=true  "orb_feature")
+![orb_feature](https://github.com/shangzhouye/portfolio-website/blob/master/content/featured-projects/stereo_slam/figures/orb_feature.gif?raw=true  "orb_feature")
 
-Check out my [portfolio post](https://shangzhouye.tech/project/stereo_slam/) for a detailed description of the components and algorithms used in this implementation.
+Check out my [portfolio post](https://shangzhouye.tech/featured-projects/stereo_slam/) for a detailed description of the components and algorithms used in this implementation.
 
-![Stereo SLAM](https://github.com/shangzhouye/portfolio-website/blob/master/content/project/stereo_slam/figures/Stereo%20SLAM.png?raw=true  "Stereo SLAM")
+![Stereo SLAM](https://github.com/shangzhouye/portfolio-website/blob/master/content/featured-projects/stereo_slam/figures/Stereo%20SLAM.png?raw=true  "Stereo SLAM")
 
 This project built a stereo visual SLAM system from scratch. It has feature-based visual odometry using ORB features, and a keyframe-based map management and optimization backend. The system is integrated with ROS.
 
@@ -96,4 +96,4 @@ The table below shows the performance of my implementation on KITTI Dataset sequ
 
 The figure below shows the trajectory estimated by my implementation compared to the ground truth. The system has been tested on KITTI sequence 00 and 01 without lost.
 
-![sequence_00](https://github.com/shangzhouye/portfolio-website/blob/master/content/project/stereo_slam/figures/sequence_00-1.jpg?raw=true  "sequence_00")
+![sequence_00](https://github.com/shangzhouye/portfolio-website/blob/master/content/featured-projects/stereo_slam/figures/sequence_00-1.jpg?raw=true  "sequence_00")
